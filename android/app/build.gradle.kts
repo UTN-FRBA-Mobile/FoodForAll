@@ -1,3 +1,10 @@
+import java.util.Properties
+
+val localProps = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
+}
+val mapsApiKey = localProps.getProperty("MAPS_API_KEY") ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,6 +23,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "google_maps_key", mapsApiKey)
     }
 
     buildTypes {
@@ -49,6 +57,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
