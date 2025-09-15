@@ -46,13 +46,15 @@ private val setSaver: Saver<Set<String>, ArrayList<String>> =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen () {
+    //Estado del tab seleccionado
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedTab = homeTabs[selectedTabIndex]
 
+    //Estado de los filtros rapidos
     var showFilters by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    val selectedFilters by rememberSaveable(stateSaver = setSaver) { // Use 'by' for delegation
+    val selectedFilters by rememberSaveable(stateSaver = setSaver) {
         mutableStateOf(emptySet<String>())
     }
 
