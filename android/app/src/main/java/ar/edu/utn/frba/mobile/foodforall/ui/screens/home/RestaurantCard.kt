@@ -8,12 +8,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -47,18 +52,20 @@ fun RestaurantCard(
     onReviewClick: (Restaurant) -> Unit = {}
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
+    var cardHeight by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
     
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        // Cuadrado de reseña (detrás de la tarjeta) - mismo tamaño que la card
+        // Cuadrado de reseña (detrás de la tarjeta) - ENFOQUE AGRESIVO
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .fillMaxWidth(0.15f) // 30% del ancho de la card
-                .height(143.dp) // Altura similar a la card
+                .width(60.dp) // Ancho fijo pero pequeño
+                .height(if (cardHeight > 0) with(density) { cardHeight.toDp() } else 120.dp) // Altura exacta de la card
                 .background(
                     color = Color(0xFFE91E63), // Rosa
                     shape = RoundedCornerShape(8.dp)
@@ -69,17 +76,21 @@ fun RestaurantCard(
                 text = "Reseña",
                 modifier = Modifier
                     .align(Alignment.Center),
-                fontSize = 14.sp,
+                fontSize = 12.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
         }
         
-        // Tarjeta principal (se puede arrastrar)
+        // Tarjeta principal (se puede arrastrar) - MEDICIÓN AGRESIVA
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
+                .onSizeChanged { size ->
+                    // MEDIR LA ALTURA REAL DE LA CARD
+                    cardHeight = size.height.toFloat()
+                }
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragEnd = {
