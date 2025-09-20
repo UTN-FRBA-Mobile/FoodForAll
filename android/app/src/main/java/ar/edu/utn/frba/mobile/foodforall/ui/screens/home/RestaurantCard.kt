@@ -1,5 +1,6 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -8,18 +9,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
+import ar.edu.utn.frba.mobile.foodforall.R
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +45,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+
 
 /**
  * Componente que muestra una tarjeta de restaurante con el diseño de la imagen.
@@ -218,18 +223,54 @@ fun RestaurantCard(
                 }
             }
             
-            // Imagen del restaurante (derecha)
+            // Imagen del restaurante (derecha) - IMÁGENES REALES
             Box(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE0E0E0))
             ) {
-                Text(
-                    text = "🍽️",
-                    modifier = Modifier.align(Alignment.Center),
-                    fontSize = 24.sp
-                )
+                // Usar imagen real si existe, sino usar color
+                val imageResource = when (restaurant.name.lowercase()) {
+                    "panera rosa" -> R.drawable.panera_rosa
+                    "tomate" -> R.drawable.tomate
+                    "mi barrio" -> R.drawable.mi_barrio
+                    else -> null
+                }
+                
+                if (imageResource != null) {
+                    // Mostrar imagen real
+                    Image(
+                        painter = painterResource(id = imageResource),
+                        contentDescription = restaurant.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Fallback a color para restaurantes sin imagen
+                    val backgroundColor = when (restaurant.name.lowercase()) {
+                        "mc donalds" -> Color(0xFFFFC107)
+                        "roldán" -> Color(0xFF9C27B0)
+                        "kansas" -> Color(0xFFFF9800)
+                        "la parrilla" -> Color(0xFFF44336)
+                        "sushi zen" -> Color(0xFF00BCD4)
+                        "pizza corner" -> Color(0xFF795548)
+                        else -> Color(0xFFE0E0E0)
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(backgroundColor)
+                    ) {
+                        Text(
+                            text = restaurant.name.take(2).uppercase(),
+                            modifier = Modifier.align(Alignment.Center),
+                            fontSize = 16.sp,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
         }
