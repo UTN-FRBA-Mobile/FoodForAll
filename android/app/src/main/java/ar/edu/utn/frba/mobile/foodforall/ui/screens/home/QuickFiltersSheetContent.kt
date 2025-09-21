@@ -8,12 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountBox
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Call
-import androidx.compose.material.icons.outlined.Face
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -23,20 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
 
-private data class FilterIcon(
-    val key: String,
-    val label: String,
-    val icon: ImageVector
-)
-
-private val quickFilterIcons = listOf(
-    FilterIcon("veggie", "Vegetariano", Icons.Outlined.AccountBox),
-    FilterIcon("celiac", "Celiaco", Icons.Outlined.AccountCircle),
-    FilterIcon("sibo", "Sibo", Icons.Outlined.Face),
-    FilterIcon("vegan", "Vegano", Icons.Outlined.Call),
+private val quickFilterOptions = listOf(
+    DietaryRestriction.VEGETARIAN,
+    DietaryRestriction.CELIAC,
+    DietaryRestriction.SIBO,
+    DietaryRestriction.VEGAN,
 )
 
 /**
@@ -56,13 +45,13 @@ fun QuickFiltersSheetContent(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            quickFilterIcons.forEach { f ->
-                val selected = f.key in selectedKeys
-                SelectableIcon(
+            quickFilterOptions.forEach { restriction ->
+                val selected = restriction.key in selectedKeys
+                SelectableFilterOption(
                     selected = selected,
-                    label = f.label,
-                    icon = f.icon,
-                    onClick = { onToggle(f.key) }
+                    label = restriction.description,
+                    emoji = restriction.emoji,
+                    onClick = { onToggle(restriction.key) }
                 )
             }
         }
@@ -71,14 +60,13 @@ fun QuickFiltersSheetContent(
 }
 
 @Composable
-private fun SelectableIcon(
+private fun SelectableFilterOption(
     selected: Boolean,
     label: String,
-    icon: ImageVector,
+    emoji: String,
     onClick: () -> Unit
 ) {
     val selectedBg = MaterialTheme.colorScheme.primaryContainer
-    val tint = if (selected) MaterialTheme.colorScheme.primary else LocalContentColor.current
 
     Surface(
         shape = CircleShape,
@@ -87,12 +75,19 @@ private fun SelectableIcon(
     ) {
         IconButton(
             onClick = onClick,
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(64.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(icon, contentDescription = label, tint = tint)
+                Text(
+                    text = emoji,
+                    fontSize = 24.sp
+                )
                 Spacer(Modifier.height(2.dp))
-                Text(label, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (selected) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                )
             }
         }
     }

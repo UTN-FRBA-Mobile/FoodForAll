@@ -1,5 +1,7 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.home
 
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+
 /**
  * Datos hardcodeados de restaurantes de ejemplo basados en la imagen.
  */
@@ -13,9 +15,10 @@ object SampleRestaurants {
             likes = 120,
             comments = 5,
             saves = 5,
-            hasVegetarianOption = true,
-            hasRestriction = true,
-            hasOffer = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.CELIAC),
+            hasOffer = true,
+            rating = 4.5f,
+            distanceKm = 0.8f
         ),
         Restaurant(
             id = "2",
@@ -25,7 +28,10 @@ object SampleRestaurants {
             likes = 120,
             comments = 5,
             saves = 5,
-            hasVegetarianOption = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.VEGAN),
+            hasOffer = false,
+            rating = 4.2f,
+            distanceKm = 1.2f
         ),
         Restaurant(
             id = "3",
@@ -35,8 +41,10 @@ object SampleRestaurants {
             likes = 120,
             comments = 5,
             saves = 5,
-            hasVegetarianOption = true,
-            hasRestriction = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN),
+            hasOffer = true,
+            rating = 3.8f,
+            distanceKm = 2.1f
         ),
         Restaurant(
             id = "4",
@@ -46,9 +54,10 @@ object SampleRestaurants {
             likes = 120,
             comments = 5,
             saves = 5,
-            hasVegetarianOption = true,
-            hasRestriction = true,
-            hasOffer = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.SIBO),
+            hasOffer = true,
+            rating = 4.7f,
+            distanceKm = 0.5f
         ),
         Restaurant(
             id = "5",
@@ -58,9 +67,10 @@ object SampleRestaurants {
             likes = 120,
             comments = 5,
             saves = 5,
-            hasVegetarianOption = true,
-            hasRestriction = true,
-            hasOffer = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.CELIAC, DietaryRestriction.VEGAN),
+            hasOffer = true,
+            rating = 4.3f,
+            distanceKm = 1.8f
         ),
         Restaurant(
             id = "6",
@@ -69,7 +79,11 @@ object SampleRestaurants {
             imageResource = "kansas",
             likes = 120,
             comments = 5,
-            saves = 5
+            saves = 5,
+            dietaryRestrictions = emptySet(),
+            hasOffer = false,
+            rating = 4.1f,
+            distanceKm = 3.2f
         ),
         Restaurant(
             id = "7",
@@ -79,8 +93,10 @@ object SampleRestaurants {
             likes = 95,
             comments = 3,
             saves = 8,
-            hasVegetarianOption = true,
-            hasOffer = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN),
+            hasOffer = true,
+            rating = 4.4f,
+            distanceKm = 0.7f
         ),
         Restaurant(
             id = "8",
@@ -90,8 +106,10 @@ object SampleRestaurants {
             likes = 150,
             comments = 12,
             saves = 20,
-            hasVegetarianOption = false,
-            hasOffer = true
+            dietaryRestrictions = emptySet(),
+            hasOffer = true,
+            rating = 4.6f,
+            distanceKm = 1.5f
         ),
         Restaurant(
             id = "9",
@@ -101,8 +119,10 @@ object SampleRestaurants {
             likes = 200,
             comments = 8,
             saves = 15,
-            hasVegetarianOption = true,
-            hasRestriction = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.SIBO),
+            hasOffer = false,
+            rating = 4.8f,
+            distanceKm = 2.3f
         ),
         Restaurant(
             id = "10",
@@ -112,8 +132,10 @@ object SampleRestaurants {
             likes = 180,
             comments = 6,
             saves = 12,
-            hasVegetarianOption = true,
-            hasOffer = true
+            dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.VEGAN),
+            hasOffer = true,
+            rating = 4.0f,
+            distanceKm = 1.9f
         )
     )
 }

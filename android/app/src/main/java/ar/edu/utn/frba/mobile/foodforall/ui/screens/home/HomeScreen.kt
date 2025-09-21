@@ -27,7 +27,7 @@ import ar.edu.utn.frba.mobile.foodforall.ui.components.FilterPillButton
 
 sealed class HomeTab (val title: String) {
     data object Map : HomeTab("Mapa")
-    data object Restaurants : HomeTab("Restoranes")
+    data object Restaurants : HomeTab("Restaurantes")
 }
 
 private val homeTabs = listOf(HomeTab.Restaurants, HomeTab.Map)
@@ -60,9 +60,7 @@ fun HomeScreen () {
 
     Box(Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 88.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             HomeTabRow(
                 selected = selectedTab,

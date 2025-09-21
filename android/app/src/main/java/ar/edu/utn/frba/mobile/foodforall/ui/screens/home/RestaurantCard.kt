@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
 import kotlin.math.roundToInt
 
 
@@ -143,27 +144,17 @@ fun RestaurantCard(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Iconos de características (simplificados)
+                // Iconos de restricciones dietéticas
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (restaurant.hasVegetarianOption) {
-                        Text(
-                            text = "🌽",
-                            fontSize = 16.sp
-                        )
-                    }
-                    if (restaurant.hasRestriction) {
-                        Text(
-                            text = "🥛",
-                            fontSize = 16.sp
-                        )
-                    }
-                    if (restaurant.hasOffer) {
-                        Text(
-                            text = "🌱",
-                            fontSize = 16.sp
-                        )
+                    restaurant.dietaryRestrictions.forEach { restriction ->
+                        if (restriction.emoji.isNotEmpty()) {
+                            Text(
+                                text = restriction.emoji,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
                 
@@ -288,9 +279,10 @@ fun RestaurantCardPreview() {
         likes = 120,
         comments = 5,
         saves = 5,
-        hasVegetarianOption = true,
-        hasRestriction = true,
-        hasOffer = true
+        dietaryRestrictions = setOf(DietaryRestriction.VEGETARIAN, DietaryRestriction.CELIAC),
+        hasOffer = true,
+        rating = 4.5f,
+        distanceKm = 0.8f
     )
     
     RestaurantCard(restaurant = sampleRestaurant)
