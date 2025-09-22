@@ -27,7 +27,7 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.RestaurantCard
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
 
 @Composable
-fun SearchScreen() {
+fun SearchScreen(onRestaurantClick: (String) -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedDietFilters by remember { mutableStateOf(setOf<String>()) }
     var selectedSort by remember { mutableStateOf<SortOption?>(null) }
@@ -39,7 +39,7 @@ fun SearchScreen() {
             if (searchQuery.isNotBlank()) {
                 restaurants = restaurants.filter { restaurant ->
                     restaurant.name.contains(searchQuery, ignoreCase = true) ||
-                    restaurant.description.contains(searchQuery, ignoreCase = true)
+                            restaurant.description.contains(searchQuery, ignoreCase = true)
                 }
             }
 
@@ -145,8 +145,8 @@ fun SearchScreen() {
             items(filteredRestaurants) { restaurant ->
                 RestaurantCard(
                     restaurant = restaurant,
-                    onRestaurantClick = { },
-                    onReviewClick = { }
+                    onRestaurantClick = { onRestaurantClick(restaurant.id) },
+                    onReviewClick = { /* No-op, because it's a search screen */ }
                 )
             }
         }

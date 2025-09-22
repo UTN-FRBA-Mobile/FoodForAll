@@ -16,11 +16,15 @@ import androidx.navigation.compose.rememberNavController
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.profile.ProfileScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.search.SearchScreen
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileScreen
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
 object Routes {
     const val HOME = "home"
     const val SEARCH = "search"
     const val PROFILE = "profile"
+    const val RESTAURANT_PROFILE = "restaurant_profile/{restaurantId}"
 }
 
 data class BottomItem(
@@ -65,13 +69,34 @@ fun AppRoot() {
             modifier = Modifier.then(Modifier.padding(innerPadding))
         ) {
             composable(Routes.HOME) {
-                HomeScreen()
+                HomeScreen(
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate("restaurant_profile/$restaurantId")
+                    }
+                )
             }
             composable(Routes.SEARCH) {
-                SearchScreen()
+                SearchScreen(
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate("restaurant_profile/$restaurantId")
+                    }
+                )
             }
             composable(Routes.PROFILE) {
-                ProfileScreen()
+                ProfileScreen(
+                )
+            }
+            composable(
+                route = Routes.RESTAURANT_PROFILE,
+                arguments = listOf(navArgument("restaurantId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val restaurantId = backStackEntry.arguments?.getString("restaurantId")
+                if (restaurantId != null) {
+                    RestaurantProfileScreen(
+                        restaurantId = restaurantId,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

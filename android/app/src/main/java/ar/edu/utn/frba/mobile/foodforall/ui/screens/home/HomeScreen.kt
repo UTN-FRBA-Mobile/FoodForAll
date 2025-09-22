@@ -42,10 +42,9 @@ private val setSaver: Saver<Set<String>, ArrayList<String>> =
  * Muestra la pantalla principal de la aplicación.
  * Contiene un mapa y una lista de restaurantes.
  */
-@Preview(showBackground = true)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen () {
+fun HomeScreen (onRestaurantClick: (String) -> Unit) {
     //Estado del tab seleccionado
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedTab = homeTabs[selectedTabIndex]
@@ -69,7 +68,8 @@ fun HomeScreen () {
             when (selectedTab) {
                 is HomeTab.Map -> MapTab(modifier = Modifier.fillMaxSize())
                 is HomeTab.Restaurants -> RestaurantListTab(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    onRestaurantClick = onRestaurantClick
                 )
             }
         }

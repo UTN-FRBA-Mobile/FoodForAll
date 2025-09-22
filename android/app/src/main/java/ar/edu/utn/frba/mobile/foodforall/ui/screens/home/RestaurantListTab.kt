@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RestaurantListTab(
     modifier: Modifier = Modifier,
-    onRestaurantClick: (Restaurant) -> Unit = {},
+    onRestaurantClick: (String) -> Unit = {},
     onReviewClick: (Restaurant) -> Unit = {}
 ) {
     Box(
@@ -36,7 +36,7 @@ fun RestaurantListTab(
             items(SampleRestaurants.restaurants) { restaurant ->
                 RestaurantCard(
                     restaurant = restaurant,
-                    onRestaurantClick = onRestaurantClick,
+                    onRestaurantClick = { onRestaurantClick(restaurant.id) },
                     onReviewClick = onReviewClick
                 )
             }
