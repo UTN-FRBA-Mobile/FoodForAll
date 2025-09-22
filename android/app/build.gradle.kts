@@ -1,7 +1,15 @@
+import java.util.Properties
+
+val localProps = Properties().apply {
+    load(rootProject.file("local.properties").inputStream())
+}
+val mapsApiKey = localProps.getProperty("MAPS_API_KEY") ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -16,6 +24,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "google_maps_key", mapsApiKey)
     }
 
     buildTypes {
@@ -49,6 +58,17 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.maps.compose.v433)
+    implementation(libs.play.services.maps.v1820)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.ui)
+    implementation(libs.play.services.location)
+    implementation(libs.firebase.firestore)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.geofire.android.common)
+    implementation(libs.firebase.analytics)
+    // Para usar await() en Tasks de Firebase:
+    //plementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1"
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
