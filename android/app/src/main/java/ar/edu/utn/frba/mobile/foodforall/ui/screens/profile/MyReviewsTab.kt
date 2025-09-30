@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MyReviewsTab(
     reviews: List<Review>,
+    onRestaurantClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (reviews.isEmpty()) {
@@ -55,7 +56,8 @@ fun MyReviewsTab(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(reviews) { review ->
-                ReviewCard(review = review)
+                // ¡Sintaxis corregida! Pasa onRestaurantClick como un argumento normal de la función.
+                ReviewCard(review = review, onRestaurantClick = onRestaurantClick)
             }
         }
     }
@@ -64,5 +66,8 @@ fun MyReviewsTab(
 @Preview(showBackground = true)
 @Composable
 fun MyReviewsTabPreview() {
-    MyReviewsTab(reviews = SampleUserData.userReviews)
+    // Error de 'No value passed for parameter onRestaurantClick' en el Preview
+    // CORREGIDO: Llamamos a MyReviewsTabPreview sin argumentos, pero MyReviewsTab necesita el parámetro.
+    // La Preview debe pasar un lambda vacío.
+    MyReviewsTab(reviews = SampleUserData.userReviews, onRestaurantClick = {})
 }

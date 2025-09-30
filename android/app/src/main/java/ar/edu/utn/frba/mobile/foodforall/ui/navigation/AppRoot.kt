@@ -84,6 +84,9 @@ fun AppRoot() {
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate("restaurant_profile/$restaurantId")
+                    }
                 )
             }
             composable(

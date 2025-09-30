@@ -2,6 +2,7 @@ package ar.edu.utn.frba.mobile.foodforall.ui.screens.profile
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,12 +36,14 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
 @Composable
 fun ReviewCard(
     review: Review,
+    onRestaurantClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { onRestaurantClick(review.restaurant.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

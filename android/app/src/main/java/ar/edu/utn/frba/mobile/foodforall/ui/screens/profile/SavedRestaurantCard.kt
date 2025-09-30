@@ -37,14 +37,14 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
 @Composable
 fun SavedRestaurantCard(
     restaurant: Restaurant,
-    onRestaurantClick: (Restaurant) -> Unit = {},
+    onRestaurantClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable { onRestaurantClick(restaurant) },
+            .clickable { onRestaurantClick(restaurant.id) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

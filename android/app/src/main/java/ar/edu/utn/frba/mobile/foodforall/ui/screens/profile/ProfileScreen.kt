@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+// Importación de Restaurant necesaria para la lambda en SavedRestaurantsTab
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.Restaurant
 
 sealed class ProfileTab(val title: String) {
     data object MyReviews : ProfileTab("Mis Reseñas")
@@ -25,7 +27,7 @@ sealed class ProfileTab(val title: String) {
 private val profileTabs = listOf(ProfileTab.MyReviews, ProfileTab.Saved)
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(onRestaurantClick: (String) -> Unit) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val selectedTab = profileTabs[selectedTabIndex]
 
@@ -56,13 +58,15 @@ fun ProfileScreen() {
                 is ProfileTab.MyReviews -> {
                     MyReviewsTab(
                         reviews = SampleUserData.userReviews,
+                        onRestaurantClick = onRestaurantClick,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
                 is ProfileTab.Saved -> {
                     SavedRestaurantsTab(
                         savedRestaurants = SampleUserData.savedRestaurants,
-                        onRestaurantClick = { /* TODO: Navigate to restaurant detail */ },
+                        // CORRECCIÓN: Definimos explícitamente el tipo (Restaurant) para acceder a .id
+                        onRestaurantClick = onRestaurantClick,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -74,5 +78,5 @@ fun ProfileScreen() {
 @Preview(showBackground = true)
 @Composable
 fun ProfileScreenPreview() {
-    ProfileScreen()
+    ProfileScreen(onRestaurantClick = {})
 }

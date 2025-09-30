@@ -20,7 +20,7 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.Restaurant
 @Composable
 fun SavedRestaurantsTab(
     savedRestaurants: List<Restaurant>,
-    onRestaurantClick: (Restaurant) -> Unit = {},
+    onRestaurantClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (savedRestaurants.isEmpty()) {
@@ -57,7 +57,7 @@ fun SavedRestaurantsTab(
             items(savedRestaurants) { restaurant ->
                 SavedRestaurantCard(
                     restaurant = restaurant,
-                    onRestaurantClick = onRestaurantClick
+                    onRestaurantClick = { onRestaurantClick(restaurant.id) }
                 )
             }
         }
