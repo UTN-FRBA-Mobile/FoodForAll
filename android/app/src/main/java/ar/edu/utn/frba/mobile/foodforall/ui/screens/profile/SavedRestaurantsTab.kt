@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 
 @Composable
 fun SavedRestaurantsTab(
@@ -67,5 +67,27 @@ fun SavedRestaurantsTab(
 @Preview(showBackground = true)
 @Composable
 fun SavedRestaurantsTabPreview() {
-    SavedRestaurantsTab(savedRestaurants = SampleUserData.savedRestaurants)
+    val sampleRestaurants = listOf(
+        Restaurant(
+            id = "1",
+            name = "Panera Rosa",
+            description = "2X1 en cafes HOY",
+            lat = -34.603722,
+            lng = -58.381592,
+            hasVegetarianOption = true,
+            hasVeganOption = true,
+            rating = 4.5f
+        ),
+        Restaurant(
+            id = "2",
+            name = "Tomate",
+            description = "Especialidades vegetarianas",
+            lat = -34.603722,
+            lng = -58.381592,
+            hasVegetarianOption = true,
+            rating = 4.8f
+        )
+    )
+
+    SavedRestaurantsTab(savedRestaurants = sampleRestaurants)
 }

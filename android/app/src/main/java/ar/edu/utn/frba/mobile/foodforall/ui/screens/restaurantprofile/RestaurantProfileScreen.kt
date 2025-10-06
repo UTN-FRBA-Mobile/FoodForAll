@@ -1,9 +1,9 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -16,20 +16,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ar.edu.utn.frba.mobile.foodforall.R
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.repository.RestaurantRepository
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
-// Sección sellada para gestionar el estado de las pestañas
 sealed class ProfileSection(val title: String, val icon: ImageVector) {
     data object Menu : ProfileSection("Carta", Icons.Default.List)
     data object Gallery : ProfileSection("Galería", Icons.Default.Favorite)
@@ -46,10 +51,38 @@ private val profileSections = listOf(
 @Composable
 fun RestaurantProfileScreen(
     restaurantId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: RestaurantProfileViewModel = viewModel()
 ) {
-    val restaurant = SampleRestaurants.restaurants.firstOrNull { it.id == restaurantId }
+    val repository = remember { RestaurantRepository(FirebaseFirestore.getInstance()) }
+    val scope = rememberCoroutineScope()
+    var restaurant by remember { mutableStateOf<Restaurant?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
     var selectedSectionIndex by remember { mutableIntStateOf(0) }
+
+    val reviews by viewModel.reviews.collectAsState()
+    val reviewsLoading by viewModel.isLoading.collectAsState()
+
+    LaunchedEffect(restaurantId) {
+        scope.launch {
+            try {
+                restaurant = repository.getById(restaurantId)
+            } finally {
+                isLoading = false
+            }
+        }
+        viewModel.loadReviews(restaurantId)
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     if (restaurant == null) {
         Box(
@@ -66,7 +99,7 @@ fun RestaurantProfileScreen(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        TopAppBar(restaurant = restaurant, onBack = onBack)
+        TopAppBar(restaurant = restaurant!!, onBack = onBack)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -102,7 +135,10 @@ fun RestaurantProfileScreen(
             when (profileSections[selectedSectionIndex]) {
                 is ProfileSection.Menu -> MenuTabContent()
                 is ProfileSection.Gallery -> GalleryTabContent()
-                is ProfileSection.Reviews -> ReviewsTabContent()
+                is ProfileSection.Reviews -> ReviewsTabContent(
+                    reviews = reviews,
+                    isLoading = reviewsLoading
+                )
             }
         }
     }
@@ -118,34 +154,12 @@ fun TopAppBar(
             .fillMaxWidth()
             .height(200.dp)
     ) {
-        val imageResource = when (restaurant.imageResource?.lowercase()) {
-            "panera_rosa" -> R.drawable.panera_rosa
-            "tomate" -> R.drawable.tomate
-            "mi_barrio" -> R.drawable.mi_barrio
-            "roldan" -> R.drawable.roldan
-            "kansas" -> R.drawable.kansas
-            "la_parrilla" -> R.drawable.la_parrilla
-            "sushi_zen" -> R.drawable.sushi_zen
-            "pizza_corner" -> R.drawable.pizza_corner
-            "mcdonalds" -> R.drawable.mcdonalds
-            else -> null
-        }
-
-        if (imageResource != null) {
-            Image(
-                painter = painterResource(id = imageResource),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            // Fallback for restaurants without a specific image
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.DarkGray)
-            )
-        }
+        AsyncImage(
+            imageUrl = restaurant.imageUrl,
+            contentDescription = restaurant.name,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
         Box(
             modifier = Modifier
@@ -213,13 +227,11 @@ fun ProfileOption(
     }
 }
 
-// Contenido para la sección de Carta
 @Composable
 fun MenuTabContent() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Carta
         Text(
             text = "Entradas",
             fontWeight = FontWeight.Bold,
@@ -256,7 +268,6 @@ fun MenuTabContent() {
     }
 }
 
-// Contenido para la sección de Galería
 @Composable
 fun GalleryTabContent() {
     Box(
@@ -267,14 +278,58 @@ fun GalleryTabContent() {
     }
 }
 
-// Contenido para la sección de Reseñas
 @Composable
-fun ReviewsTabContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Lista de reseñas del restaurante")
+fun ReviewsTabContent(
+    reviews: List<ReviewWithUser>,
+    isLoading: Boolean
+) {
+    when {
+        isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        reviews.isEmpty() -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "⭐",
+                        fontSize = 48.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "No hay reseñas aún",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "Sé el primero en dejar una reseña",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+        }
+        else -> {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                items(reviews.size) { index ->
+                    RestaurantReviewCard(reviewWithUser = reviews[index])
+                }
+            }
+        }
     }
 }
 

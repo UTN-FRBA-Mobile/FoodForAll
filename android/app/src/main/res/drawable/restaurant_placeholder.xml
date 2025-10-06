@@ -1,9 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#E0E0E0" />
-    <corners android:radius="8dp" />
-    <stroke
-        android:width="1dp"
-        android:color="#BDBDBD" />
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Background -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M0,0 L200,0 L200,200 L0,200 Z"/>
+
+    <!-- Restaurant icon (simplified fork and knife) -->
+    <!-- Fork -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M70,60 L70,140 L75,140 L75,95 L80,95 L80,60 M70,60 L65,60 L65,95 L70,95 M80,60 L85,60 L85,95 L80,95"/>
+
+    <!-- Knife -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M115,60 L115,85 C115,90 118,93 123,93 L123,140 L128,140 L128,93 C133,93 136,90 136,85 L136,60 Z"/>
+
+    <!-- Plate circle -->
+    <path
+        android:strokeColor="#9E9E9E"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M100,100 m-30,0 a30,30 0 1,1 60,0 a30,30 0 1,1 -60,0"/>
+</vector>

@@ -28,9 +28,6 @@ private val quickFilterOptions = listOf(
     DietaryRestriction.VEGAN,
 )
 
-/**
- * Muestra un filtro de comida, para listar solamente las dietas seleccionadas
- */
 @Composable
 fun QuickFiltersSheetContent(
     selectedKeys: Set<String>,

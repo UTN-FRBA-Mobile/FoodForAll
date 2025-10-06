@@ -8,12 +8,14 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeScreen
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeViewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.profile.ProfileScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.search.SearchScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileScreen
@@ -39,12 +41,11 @@ private val bottomItems = listOf(
     BottomItem(Routes.PROFILE, "Perfil", Icons.Filled.Person),
 )
 
-/**
- * Contiene la barra de navegación y el contenido principal de la aplicación.
- */
 @Composable
 fun AppRoot() {
     val navController = rememberNavController()
+
+    val sharedHomeViewModel: HomeViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -72,14 +73,16 @@ fun AppRoot() {
                 HomeScreen(
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
-                    }
+                    },
+                    viewModel = sharedHomeViewModel
                 )
             }
             composable(Routes.SEARCH) {
                 SearchScreen(
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
-                    }
+                    },
+                    viewModel = sharedHomeViewModel
                 )
             }
             composable(Routes.PROFILE) {

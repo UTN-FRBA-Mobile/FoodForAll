@@ -22,10 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ar.edu.utn.frba.mobile.foodforall.domain.model.User
 
 @Composable
 fun ProfileHeader(
-    userProfile: UserProfile,
+    userProfile: User,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -44,7 +45,7 @@ fun ProfileHeader(
                 text = userProfile.fullName
                     .split(" ")
                     .take(2)
-                    .joinToString("") { it.first().toString() }
+                    .joinToString("") { it.firstOrNull()?.toString() ?: "" }
                     .uppercase(),
                 modifier = Modifier.align(Alignment.Center),
                 fontSize = 20.sp,
@@ -79,10 +80,11 @@ fun ProfileHeader(
 @Preview(showBackground = true)
 @Composable
 fun ProfileHeaderPreview() {
-    val sampleUser = UserProfile(
+    val sampleUser = User(
         id = "1",
-        fullName = "Juan Perez",
-        username = "@juanperez"
+        fullName = "Juan Pérez",
+        username = "@juanperez",
+        email = "juan@example.com"
     )
 
     ProfileHeader(userProfile = sampleUser)
