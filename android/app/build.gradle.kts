@@ -45,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -67,8 +68,13 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.geofire.android.common)
     implementation(libs.firebase.analytics)
+
     // Para usar await() en Tasks de Firebase:
-    //plementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1"
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

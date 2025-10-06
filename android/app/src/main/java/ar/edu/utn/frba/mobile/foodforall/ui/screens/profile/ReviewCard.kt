@@ -1,6 +1,5 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.profile
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,20 +22,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ar.edu.utn.frba.mobile.foodforall.R
+import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Review
 import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
 
 @Composable
 fun ReviewCard(
-    review: Review,
+    reviewWithRestaurant: ReviewWithRestaurant,
     modifier: Modifier = Modifier
 ) {
+    val review = reviewWithRestaurant.review
+    val restaurant = reviewWithRestaurant.restaurant
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -50,51 +52,14 @@ fun ReviewCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Box(
+            AsyncImage(
+                imageUrl = restaurant?.imageUrl,
+                contentDescription = restaurant?.name,
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            ) {
-                val imageResource = when (review.restaurant.name.lowercase()) {
-                    "panera rosa" -> R.drawable.panera_rosa
-                    "tomate" -> R.drawable.tomate
-                    "mi barrio" -> R.drawable.mi_barrio
-                    else -> null
-                }
-
-                if (imageResource != null) {
-                    Image(
-                        painter = painterResource(id = imageResource),
-                        contentDescription = review.restaurant.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    val backgroundColor = when (review.restaurant.name.lowercase()) {
-                        "mc donalds" -> Color(0xFFFFC107)
-                        "roldán" -> Color(0xFF9C27B0)
-                        "kansas" -> Color(0xFFFF9800)
-                        "la parrilla" -> Color(0xFFF44336)
-                        "sushi zen" -> Color(0xFF00BCD4)
-                        "pizza corner" -> Color(0xFF795548)
-                        else -> Color(0xFFE0E0E0)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(backgroundColor)
-                    ) {
-                        Text(
-                            text = review.restaurant.name.take(2).uppercase(),
-                            modifier = Modifier.align(Alignment.Center),
-                            fontSize = 14.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -107,13 +72,13 @@ fun ReviewCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = review.restaurant.name,
+                        text = restaurant?.name ?: "Restaurante desconocido",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
                     Text(
-                        text = review.date,
+                        text = formatTimeAgo(review.createdAt),
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -121,11 +86,12 @@ fun ReviewCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Estrellas de rating
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val stars = (1..5).joinToString("") { index ->
-                        if (index <= review.rating) "⭐" else "☆"
+                        if (index <= review.rating.toInt()) "⭐" else "☆"
                     }
 
                     Text(
@@ -144,6 +110,7 @@ fun ReviewCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Comentario y restricción dietética
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -157,10 +124,11 @@ fun ReviewCard(
                         modifier = Modifier.weight(1f)
                     )
 
-                    if (review.restriction != DietaryRestriction.GENERAL) {
+                    val restriction = review.dietaryRestrictionEnum
+                    if (restriction != DietaryRestriction.GENERAL && restriction.emoji.isNotEmpty()) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = review.restriction.emoji,
+                            text = restriction.emoji,
                             fontSize = 16.sp
                         )
                     }
@@ -170,18 +138,47 @@ fun ReviewCard(
     }
 }
 
+private fun formatTimeAgo(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+    val weeks = days / 7
+
+    return when {
+        weeks > 0 -> "Hace ${weeks}sem"
+        days > 0 -> "Hace ${days}d"
+        hours > 0 -> "Hace ${hours}h"
+        minutes > 0 -> "Hace ${minutes}min"
+        else -> "Ahora"
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun ReviewCardPreview() {
-    val sampleReview = Review(
+    val sampleRestaurant = Restaurant(
         id = "1",
-        restaurant = SampleRestaurants.restaurants[0],
-        rating = 4.5f,
-        comment = "Excelente café y ambiente acogedor. El 2x1 está genial!",
-        date = "Hace 2 días",
-        userId = "1",
-        restriction = DietaryRestriction.VEGAN
+        name = "Panera Rosa",
+        description = "2X1 en cafes HOY"
     )
 
-    ReviewCard(review = sampleReview)
+    val sampleReview = Review(
+        id = "1",
+        restaurantId = "1",
+        userId = "1",
+        rating = 4.5f,
+        comment = "Excelente café y ambiente acogedor. El 2x1 está genial!",
+        dietaryRestriction = DietaryRestriction.VEGAN.key,
+        createdAt = System.currentTimeMillis() - (2 * 24 * 60 * 60 * 1000) // Hace 2 días
+    )
+
+    ReviewCard(
+        reviewWithRestaurant = ReviewWithRestaurant(
+            review = sampleReview,
+            restaurant = sampleRestaurant
+        )
+    )
 }

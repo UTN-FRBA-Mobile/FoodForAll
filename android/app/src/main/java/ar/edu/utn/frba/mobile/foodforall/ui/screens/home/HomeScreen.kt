@@ -23,7 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.components.FilterPillButton
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
 
 sealed class HomeTab (val title: String) {
     data object Map : HomeTab("Mapa")
@@ -38,22 +40,19 @@ private val setSaver: Saver<Set<String>, ArrayList<String>> =
         restore = { list -> list.toSet() }
     )
 
-/**
- * Muestra la pantalla principal de la aplicación.
- * Contiene un mapa y una lista de restaurantes.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen (onRestaurantClick: (String) -> Unit) {
-    //Estado del tab seleccionado
+fun HomeScreen(
+    onRestaurantClick: (String) -> Unit,
+    viewModel: HomeViewModel = viewModel()
+) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedTab = homeTabs[selectedTabIndex]
 
-    //Estado de los filtros rapidos
     var showFilters by rememberSaveable { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
-    val selectedFilters by rememberSaveable(stateSaver = setSaver) {
+    var selectedFilters by rememberSaveable(stateSaver = setSaver) {
         mutableStateOf(emptySet<String>())
     }
 
@@ -66,14 +65,18 @@ fun HomeScreen (onRestaurantClick: (String) -> Unit) {
                 onSelected = { selectedTabIndex = homeTabs.indexOf(it) }
             )
             when (selectedTab) {
-                is HomeTab.Map -> MapTab(modifier = Modifier.fillMaxSize())
+                is HomeTab.Map -> MapTab(
+                    modifier = Modifier.fillMaxSize(),
+                    viewModel = viewModel,
+                    onRestaurantClick = onRestaurantClick
+                )
                 is HomeTab.Restaurants -> RestaurantListTab(
                     modifier = Modifier.fillMaxSize(),
+                    viewModel = viewModel,
                     onRestaurantClick = onRestaurantClick
                 )
             }
         }
-        //FIXME el boton queda no es flotante, por lo cual corta el contenido que hay abajo.
         FilterPillButton(
             onClick = { showFilters = true },
             modifier = Modifier
@@ -91,9 +94,19 @@ fun HomeScreen (onRestaurantClick: (String) -> Unit) {
             QuickFiltersSheetContent(
                 selectedKeys = selectedFilters,
                 onToggle = { key ->
-                    //TODO()
+                    selectedFilters = if (key in selectedFilters) {
+                        selectedFilters - key
+                    } else {
+                        selectedFilters + key
+                    }
+
+                    val filters = selectedFilters.mapNotNull { DietaryRestriction.fromKey(it) }.toSet()
+                    viewModel.applyFilters(filters)
                 },
-                onClear = { },
+                onClear = {
+                    selectedFilters = emptySet()
+                    viewModel.clearFilters()
+                },
                 onApply = { showFilters = false },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -103,9 +116,6 @@ fun HomeScreen (onRestaurantClick: (String) -> Unit) {
     }
 }
 
-/**
- * Header con los tabs
- */
 @Composable
 fun HomeTabRow(
     selected: HomeTab,
