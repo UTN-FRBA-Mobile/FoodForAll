@@ -28,10 +28,6 @@ MAPS_API_KEY=TU_API_KEY
 
 #### Firebase
 
-Descargar `google-services.json` desde [Firebase Console](https://console.firebase.google.com) y copiar a:
-- `android/app/src/debug/google-services.json`
-- `android/app/src/release/google-services.json`
-
 Usar los `.template` como referencia.
 
 ### 3. Correr el proyecto
