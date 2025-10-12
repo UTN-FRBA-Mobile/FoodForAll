@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,6 +27,7 @@ import androidx.navigation.navArgument
 import ar.edu.utn.frba.mobile.foodforall.service.StayDetectService
 import ar.edu.utn.frba.mobile.foodforall.ui.components.LocationPermissionGate
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeScreen
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeViewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.profile.ProfileScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.search.SearchScreen
@@ -49,15 +51,15 @@ private val bottomItems = listOf(
     BottomItem(Routes.PROFILE, "Perfil", Icons.Filled.Person),
 )
 
-/**
- * Contiene la barra de navegación y el contenido principal de la aplicación.
- */
 @Composable
 fun AppRoot() {
     val navController = rememberNavController()
 
     val ctx = LocalContext.current
     var hasLocation by remember { mutableStateOf(false) }
+
+    val sharedHomeViewModel: HomeViewModel = viewModel()
+
 
     fun startStayDetectService(ctx: Context) {
         val i = Intent(ctx, StayDetectService::class.java)
@@ -98,14 +100,16 @@ fun AppRoot() {
                 HomeScreen(
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
-                    }
+                    },
+                    viewModel = sharedHomeViewModel
                 )
             }
             composable(Routes.SEARCH) {
                 SearchScreen(
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
-                    }
+                    },
+                    viewModel = sharedHomeViewModel
                 )
             }
             composable(Routes.PROFILE) {

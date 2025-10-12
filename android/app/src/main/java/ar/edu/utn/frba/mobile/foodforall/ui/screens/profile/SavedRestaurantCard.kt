@@ -30,9 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ar.edu.utn.frba.mobile.foodforall.R
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.Restaurant
-import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.SampleRestaurants
 
 @Composable
 fun SavedRestaurantCard(
@@ -154,7 +153,18 @@ fun SavedRestaurantCard(
 @Preview(showBackground = true)
 @Composable
 fun SavedRestaurantCardPreview() {
+    val sampleRestaurant = Restaurant(
+        id = "1",
+        name = "Panera Rosa",
+        description = "2X1 en cafes HOY",
+        lat = -34.603722,
+        lng = -58.381592,
+        hasVegetarianOption = true,
+        hasVeganOption = true,
+        rating = 4.5f
+    )
+
     SavedRestaurantCard(
-        restaurant = SampleRestaurants.restaurants[0]
+        restaurant = sampleRestaurant
     )
 }

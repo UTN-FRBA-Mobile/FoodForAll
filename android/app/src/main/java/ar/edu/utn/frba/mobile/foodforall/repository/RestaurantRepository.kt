@@ -1,11 +1,13 @@
 package ar.edu.utn.frba.mobile.foodforall.repository
 
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -19,10 +21,9 @@ import kotlin.text.get
 class RestaurantRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
-    private val col get() = db.collection("restaurants")
+    private val collection get() = db.collection("restaurants")
 
-    // Distancia Haversine en metros
-    private fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val R = 6371000.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
@@ -47,7 +48,26 @@ class RestaurantRepository(
         return BBox(lat - latDelta, lat + latDelta, lon - lonDelta, lon + lonDelta)
     }
 
-    suspend fun fetchInBounds(bounds: LatLngBounds): List<Restaurant> {
+    suspend fun getById(restaurantId: String): Restaurant? {
+        return try {
+            val doc = collection.document(restaurantId).get().await()
+            Restaurant.fromFirestore(doc)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun getAll(): List<Restaurant> {
+        return try {
+            val snapshot = collection.get().await()
+            snapshot.documents.mapNotNull { Restaurant.fromFirestore(it) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+
+    suspend fun fetchInBounds(bounds: LatLngBounds, userLocation: LatLng? = null): List<Restaurant> {
         val center = bounds.center
         val radiusMeters = approxRadiusFromBounds(bounds)
 
@@ -55,7 +75,7 @@ class RestaurantRepository(
         val queries = GeoFireUtils.getGeoHashQueryBounds(centerGeo, radiusMeters)
 
         val tasks = queries.map { q ->
-            col.orderBy("geohash")
+            collection.orderBy("geohash")
                 .startAt(q.startHash)
                 .endAt(q.endHash)
                 .get()
@@ -63,32 +83,20 @@ class RestaurantRepository(
 
         val docs = tasks.map { it.await() }.flatMap { it.documents }
 
-        // Filtro final por distancia real (porque geohash crea una "envolvente")
-        return docs.mapNotNull { d ->
-            val lat = d.getDouble("lat") ?: return@mapNotNull null
-            val lng = d.getDouble("lng") ?: return@mapNotNull null
+        return docs.mapNotNull { doc ->
+            val restaurant = Restaurant.fromFirestore(doc) ?: return@mapNotNull null
 
             val distance = GeoFireUtils.getDistanceBetween(
                 GeoLocation(center.latitude, center.longitude),
-                GeoLocation(lat, lng)
+                GeoLocation(restaurant.lat, restaurant.lng)
             )
+
             if (distance <= radiusMeters) {
-                Restaurant(
-                    id = d.id,
-                    title = d.getString("title") ?: "POI",
-                    snippet = d.getString("snippet"),
-                    description = d.getString("description"),
-                    icon = d.getLong("icon"),
-                    likes = d.getLong("icon"),
-                    comments = d.getLong("icon"),
-                    saves = d.getLong("icon"),
-                    imageResource = d.getString("imageResource"),
-                    hasSiboOption = d.getBoolean("hasSiboOption") == true,
-                    hasVeganOption = d.getBoolean("hasVeganOption") == true,
-                    hasCeliacOption = d.getBoolean("hasCeliacOption") == true,
-                    lat = lat,
-                    lng = lng
-                )
+                val distanceKm = userLocation?.let {
+                    val distToUser = haversine(it.latitude, it.longitude, restaurant.lat, restaurant.lng)
+                    (distToUser / 1000).toFloat()
+                }
+                restaurant.copy(distanceKm = distanceKm)
             } else null
         }
     }
@@ -111,25 +119,157 @@ class RestaurantRepository(
             }
         }
 
+    suspend fun getWithFilters(dietaryRestrictions: Set<DietaryRestriction>): List<Restaurant> {
+        if (dietaryRestrictions.isEmpty()) {
+            return getAll()
+        }
+
+        return try {
+            var query: Query = collection
+
+            dietaryRestrictions.forEach { restriction ->
+                query = when (restriction) {
+                    DietaryRestriction.VEGETARIAN -> query.whereEqualTo("hasVegetarianOption", true)
+                    DietaryRestriction.VEGAN -> query.whereEqualTo("hasVeganOption", true)
+                    DietaryRestriction.CELIAC -> query.whereEqualTo("hasCeliacOption", true)
+                    DietaryRestriction.SIBO -> query.whereEqualTo("hasSiboOption", true)
+                    DietaryRestriction.GENERAL -> query
+                }
+            }
+
+            val snapshot = query.get().await()
+            snapshot.documents.mapNotNull { Restaurant.fromFirestore(it) }
+        } catch (e: Exception) {
+            val all = getAll()
+            all.filter { restaurant ->
+                dietaryRestrictions.all { restriction ->
+                    when (restriction) {
+                        DietaryRestriction.VEGETARIAN -> restaurant.hasVegetarianOption
+                        DietaryRestriction.VEGAN -> restaurant.hasVeganOption
+                        DietaryRestriction.CELIAC -> restaurant.hasCeliacOption
+                        DietaryRestriction.SIBO -> restaurant.hasSiboOption
+                        DietaryRestriction.GENERAL -> true
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun save(restaurant: Restaurant): String {
+        return try {
+            if (restaurant.id.isEmpty()) {
+                val doc = collection.document()
+                val restaurantWithId = restaurant.copy(id = doc.id)
+                doc.set(restaurantWithId.toFirestoreMap()).await()
+                doc.id
+            } else {
+                collection.document(restaurant.id)
+                    .set(restaurant.toFirestoreMap())
+                    .await()
+                restaurant.id
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
     suspend fun addPoiAt(
         latLng: LatLng,
-        title: String = "Nuevo punto",
+        name: String = "Nuevo punto",
         snippet: String? = null,
-        icon: Int = 0,
+        icon: Long = 0,
     ): String {
         val geohash = GeoFireUtils.getGeoHashForLocation(
             GeoLocation(latLng.latitude, latLng.longitude)
         )
-        val doc = col.document()
-        val data = mapOf(
-            "title" to title,
-            "snippet" to snippet,
-            "icon" to icon,
-            "lat" to latLng.latitude,
-            "lng" to latLng.longitude,
-            "geohash" to geohash
+
+        val restaurant = Restaurant(
+            name = name,
+            snippet = snippet,
+            icon = icon,
+            lat = latLng.latitude,
+            lng = latLng.longitude,
+            geohash = geohash
         )
-        doc.set(data).await()
-        return doc.id
+
+        return save(restaurant)
+    }
+
+    suspend fun delete(restaurantId: String): Boolean {
+        return try {
+            collection.document(restaurantId).delete().await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun updateRating(restaurantId: String, rating: Float): Boolean {
+        return try {
+            collection.document(restaurantId)
+                .update(
+                    mapOf(
+                        "rating" to rating,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun incrementLikes(restaurantId: String): Boolean {
+        return try {
+            val doc = collection.document(restaurantId).get().await()
+            val currentLikes = doc.getLong("likes") ?: 0
+            collection.document(restaurantId)
+                .update("likes", currentLikes + 1)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun incrementComments(restaurantId: String): Boolean {
+        return try {
+            val doc = collection.document(restaurantId).get().await()
+            val currentComments = doc.getLong("comments") ?: 0
+            collection.document(restaurantId)
+                .update("comments", currentComments + 1)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun incrementSaves(restaurantId: String): Boolean {
+        return try {
+            val doc = collection.document(restaurantId).get().await()
+            val currentSaves = doc.getLong("saves") ?: 0
+            collection.document(restaurantId)
+                .update("saves", currentSaves + 1)
+                .await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun decrementSaves(restaurantId: String): Boolean {
+        return try {
+            val doc = collection.document(restaurantId).get().await()
+            val currentSaves = doc.getLong("saves") ?: 0
+            if (currentSaves > 0) {
+                collection.document(restaurantId)
+                    .update("saves", currentSaves - 1)
+                    .await()
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 }

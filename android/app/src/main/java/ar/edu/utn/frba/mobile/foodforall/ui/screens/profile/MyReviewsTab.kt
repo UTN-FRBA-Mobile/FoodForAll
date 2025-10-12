@@ -17,10 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Review
+import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
 
 @Composable
 fun MyReviewsTab(
-    reviews: List<Review>,
+    reviews: List<ReviewWithRestaurant>,
     modifier: Modifier = Modifier
 ) {
     if (reviews.isEmpty()) {
@@ -54,8 +57,8 @@ fun MyReviewsTab(
             modifier = modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(reviews) { review ->
-                ReviewCard(review = review)
+            items(reviews) { reviewWithRestaurant ->
+                ReviewCard(reviewWithRestaurant = reviewWithRestaurant)
             }
         }
     }
@@ -64,5 +67,31 @@ fun MyReviewsTab(
 @Preview(showBackground = true)
 @Composable
 fun MyReviewsTabPreview() {
-    MyReviewsTab(reviews = SampleUserData.userReviews)
+    val sampleRestaurant = Restaurant(
+        id = "1",
+        name = "Panera Rosa",
+        description = "2X1 en cafes HOY",
+        lat = -34.603722,
+        lng = -58.381592,
+        rating = 4.5f
+    )
+
+    val sampleReview = Review(
+        id = "1",
+        restaurantId = "1",
+        userId = "1",
+        rating = 4.5f,
+        comment = "Excelente café y ambiente acogedor. El 2x1 está genial!",
+        dietaryRestriction = DietaryRestriction.VEGAN.key,
+        createdAt = System.currentTimeMillis() - (2 * 24 * 60 * 60 * 1000)
+    )
+
+    val sampleReviews = listOf(
+        ReviewWithRestaurant(
+            review = sampleReview,
+            restaurant = sampleRestaurant
+        )
+    )
+
+    MyReviewsTab(reviews = sampleReviews)
 }
