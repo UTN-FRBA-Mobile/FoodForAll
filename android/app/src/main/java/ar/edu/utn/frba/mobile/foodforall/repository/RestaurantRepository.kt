@@ -6,12 +6,15 @@ import com.firebase.geofire.GeoLocation
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.text.get
 
 class RestaurantRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -31,6 +34,17 @@ class RestaurantRepository(
         val sw = b.southwest; val ne = b.northeast
         val diagMeters = haversine(sw.latitude, sw.longitude, ne.latitude, ne.longitude)
         return diagMeters / 2.0
+    }
+
+    private data class BBox(
+        val minLat: Double, val maxLat: Double,
+        val minLon: Double, val maxLon: Double
+    )
+
+    private fun boundingBox(lat: Double, lon: Double, radiusMeters: Double): BBox {
+        val latDelta = radiusMeters / 111_000.0
+        val lonDelta = radiusMeters / (111_000.0 * cos(Math.toRadians(lat)).coerceAtLeast(1e-6))
+        return BBox(lat - latDelta, lat + latDelta, lon - lonDelta, lon + lonDelta)
     }
 
     suspend fun fetchInBounds(bounds: LatLngBounds): List<Restaurant> {
@@ -78,6 +92,24 @@ class RestaurantRepository(
             } else null
         }
     }
+
+    suspend fun findWithin(lat: Double, lon: Double, radius: Double) =
+        withContext(Dispatchers.IO) {
+            val box = boundingBox(lat, lon, radius)
+
+            val snap = db.collection("places")
+                .whereGreaterThanOrEqualTo("lat", box.minLat)
+                .whereLessThanOrEqualTo("lat", box.maxLat)
+                .whereGreaterThanOrEqualTo("lon", box.minLon)
+                .whereLessThanOrEqualTo("lon", box.maxLon)
+                .get().await()
+
+            snap.documents.filter { d ->
+                val plat = d.getDouble("lat") ?: return@filter false
+                val plon = d.getDouble("lon") ?: return@filter false
+                haversine(lat, lon, plat, plon) <= radius
+            }
+        }
 
     suspend fun addPoiAt(
         latLng: LatLng,
