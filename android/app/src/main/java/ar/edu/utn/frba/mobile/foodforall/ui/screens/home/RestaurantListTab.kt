@@ -1,5 +1,8 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.home
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues

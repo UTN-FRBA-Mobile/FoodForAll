@@ -17,6 +17,7 @@ playServicesMaps = "19.2.0"
 playServicesMapsVersion = "18.2.0"
 ui = "1.9.0"
 playServicesLocation = "21.3.0"
+lifecycleService = "2.9.4"
 
 
 [libraries]
@@ -45,6 +46,7 @@ maps-compose-v433 = { module = "com.google.maps.android:maps-compose", version.r
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 play-services-maps-v1820 = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMapsVersion" }
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleService" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
