@@ -1,6 +1,6 @@
 package ar.edu.utn.frba.mobile.foodforall.domain.model
 
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import com.google.firebase.firestore.DocumentSnapshot
 
 /**

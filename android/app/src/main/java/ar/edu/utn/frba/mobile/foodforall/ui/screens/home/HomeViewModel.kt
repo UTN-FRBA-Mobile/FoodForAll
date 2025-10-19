@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.repository.RestaurantRepository
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow

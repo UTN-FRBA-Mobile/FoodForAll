@@ -25,7 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Review
 import ar.edu.utn.frba.mobile.foodforall.domain.model.User
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 
 sealed class ProfileTab(val title: String) {
     data object MyReviews : ProfileTab("Mis Reseñas")

@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeViewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.RestaurantCard
 

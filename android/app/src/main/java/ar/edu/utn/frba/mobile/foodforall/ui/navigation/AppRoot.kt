@@ -30,13 +30,16 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeViewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.profile.ProfileScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileScreen
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.review.CreateReviewScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.search.SearchScreen
+import androidx.compose.runtime.collectAsState
 
 object Routes {
     const val HOME = "home"
     const val SEARCH = "search"
     const val PROFILE = "profile"
     const val RESTAURANT_PROFILE = "restaurant_profile/{restaurantId}"
+    const val REVIEW_CREATE = "review_create/{restaurantId}"
 }
 
 data class BottomItem(
@@ -102,6 +105,9 @@ fun AppRoot() {
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
                     },
+                    onCreateReviewClick = { restaurantId ->
+                        navController.navigate("review_create/$restaurantId")
+                    },
                     viewModel = sharedHomeViewModel
                 )
             }
@@ -126,7 +132,30 @@ fun AppRoot() {
                 if (restaurantId != null) {
                     RestaurantProfileScreen(
                         restaurantId = restaurantId,
+                        onCreateReview = { restaurantId ->
+                            navController.navigate("review_create/$restaurantId")
+                        },
                         onBack = { navController.popBackStack() }
+                    )
+                }
+            }
+            composable(
+                route = Routes.REVIEW_CREATE,
+                arguments = listOf(navArgument("restaurantId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val restaurantId = backStackEntry.arguments?.getString("restaurantId")
+                if (sharedAuthViewModel.isAuthenticated()) {
+                    if (restaurantId != null) {
+                        CreateReviewScreen(
+                            restaurantId = restaurantId,
+                            currentUserId = sharedAuthViewModel.currentUser.collectAsState().value?.id
+                                ?: "",
+                            onDone = { navController.popBackStack() },
+                            onCancel = { navController.popBackStack() })
+                    }
+                } else {
+                    ProfileScreen(
+                        authViewModel = sharedAuthViewModel
                     )
                 }
             }

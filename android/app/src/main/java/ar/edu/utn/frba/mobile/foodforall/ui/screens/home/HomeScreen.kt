@@ -25,7 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.components.FilterPillButton
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 
 sealed class HomeTab (val title: String) {
     data object Map : HomeTab("Mapa")
@@ -44,6 +45,7 @@ private val setSaver: Saver<Set<String>, ArrayList<String>> =
 @Composable
 fun HomeScreen(
     onRestaurantClick: (String) -> Unit,
+    onCreateReviewClick: (String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -73,7 +75,8 @@ fun HomeScreen(
                 is HomeTab.Restaurants -> RestaurantListTab(
                     modifier = Modifier.fillMaxSize(),
                     viewModel = viewModel,
-                    onRestaurantClick = onRestaurantClick
+                    onRestaurantClick = onRestaurantClick,
+                    onReviewClick = onCreateReviewClick
                 )
             }
         }

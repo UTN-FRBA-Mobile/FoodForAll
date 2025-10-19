@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -26,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,9 +39,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import kotlin.math.roundToInt
-
 
 @Composable
 fun RestaurantCard(
@@ -53,11 +52,19 @@ fun RestaurantCard(
     var cardHeight by remember { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
 
+    // Estado de "revelado"
+    var isRevealed by remember { mutableStateOf(false) }
+
+    // Ancho real del botón de acción y umbral de encaje
+    val actionWidthPx = with(density) { 60.dp.toPx() }
+    val revealThreshold = actionWidthPx * 0.4f
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
+        // Botón "Reseña" al fondo, anclado a la derecha
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -67,7 +74,10 @@ fun RestaurantCard(
                     color = Color(0xFFE91E63), // Rosa
                     shape = RoundedCornerShape(8.dp)
                 )
-                .clickable { onReviewClick(restaurant) }
+                .clickable {
+                    // Si el usuario toca el botón, disparamos la acción (y podemos cerrar)
+                    onReviewClick(restaurant)
+                }
         ) {
             Text(
                 text = "Reseña",
@@ -82,23 +92,40 @@ fun RestaurantCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
-                .onSizeChanged { size ->
-                    cardHeight = size.height.toFloat()
-                }
+                .onSizeChanged { size -> cardHeight = size.height.toFloat() }
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragEnd = {
-                            if (offsetX < -150f) {
-                                offsetX = -150f
+                            // encaje al soltar
+                            if (offsetX <= -revealThreshold) {
+                                offsetX = -actionWidthPx
+                                isRevealed = true
                             } else {
                                 offsetX = 0f
+                                isRevealed = false
                             }
                         }
-                    ) { _, dragAmount ->
-                        offsetX = (offsetX + dragAmount.x).coerceIn(-150f, 0f)
+                    ) { _, drag ->
+                        val newX = offsetX + drag.x
+                        // limitar entre 0 (cerrado) y -actionWidthPx (abierto)
+                        offsetX = newX.coerceIn(-actionWidthPx, 0f)
+
+                        // si ya estaba revelado y arrastra un poco a la derecha, cerramos
+                        if (isRevealed && drag.x > 12f) {
+                            offsetX = 0f
+                            isRevealed = false
+                        }
                     }
                 }
-                .clickable { onRestaurantClick(restaurant) },
+                .clickable {
+                    // si está abierto, el primer tap cierra; si no, navega
+                    if (isRevealed) {
+                        offsetX = 0f
+                        isRevealed = false
+                    } else {
+                        onRestaurantClick(restaurant)
+                    }
+                },
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
