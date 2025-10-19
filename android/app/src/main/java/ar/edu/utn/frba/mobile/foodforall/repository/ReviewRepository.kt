@@ -81,19 +81,14 @@ class ReviewRepository(
         }
     }
 
-    /**
-     * Crea o actualiza una review
-     */
     suspend fun save(review: Review): String {
         return try {
             if (review.id.isEmpty()) {
-                // Crear nueva
                 val doc = collection.document()
                 val reviewWithId = review.copy(id = doc.id)
                 doc.set(reviewWithId.toFirestoreMap()).await()
                 doc.id
             } else {
-                // Actualizar existente
                 collection.document(review.id)
                     .set(review.toFirestoreMap())
                     .await()

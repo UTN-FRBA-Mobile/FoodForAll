@@ -36,19 +36,14 @@ class UserRepository(
         }
     }
 
-    /**
-     * Crea o actualiza un usuario
-     */
     suspend fun save(user: User): String {
         return try {
             if (user.id.isEmpty()) {
-                // Crear nuevo
                 val doc = collection.document()
                 val userWithId = user.copy(id = doc.id)
                 doc.set(userWithId.toFirestoreMap()).await()
                 doc.id
             } else {
-                // Actualizar existente
                 collection.document(user.id)
                     .set(user.toFirestoreMap())
                     .await()

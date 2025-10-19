@@ -27,11 +27,6 @@ class ProfileViewModel(
     private val restaurantRepository: RestaurantRepository = RestaurantRepository(FirebaseFirestore.getInstance())
 ) : ViewModel() {
 
-    private val currentUserId = MutableStateFlow<String?>(null)
-
-    private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
-
     private val _userReviews = MutableStateFlow<List<ReviewWithRestaurant>>(emptyList())
     val userReviews: StateFlow<List<ReviewWithRestaurant>> = _userReviews.asStateFlow()
 
@@ -44,28 +39,7 @@ class ProfileViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    init {
-        // Cargar el primer usuario disponible como usuario actual
-        loadFirstUser()
-    }
-
-    private fun loadFirstUser() {
-        viewModelScope.launch {
-            try {
-                val users = userRepository.getAll()
-                if (users.isNotEmpty()) {
-                    val user = users.first()
-                    currentUserId.value = user.id
-                    _currentUser.value = user
-                    loadUserData(user.id)
-                }
-            } catch (e: Exception) {
-                _error.value = "Error al cargar usuario: ${e.message}"
-            }
-        }
-    }
-
-    private fun loadUserData(userId: String) {
+    fun loadUserData(userId: String) {
         loadUserReviews(userId)
         loadSavedRestaurants(userId)
     }
@@ -111,9 +85,7 @@ class ProfileViewModel(
         }
     }
 
-    fun toggleSaveRestaurant(restaurantId: String) {
-        val userId = currentUserId.value ?: return
-
+    fun toggleSaveRestaurant(userId: String, restaurantId: String) {
         viewModelScope.launch {
             try {
                 savedRestaurantRepository.toggle(userId, restaurantId)
@@ -124,9 +96,7 @@ class ProfileViewModel(
         }
     }
 
-    fun deleteReview(reviewId: String) {
-        val userId = currentUserId.value ?: return
-
+    fun deleteReview(userId: String, reviewId: String) {
         viewModelScope.launch {
             try {
                 reviewRepository.delete(reviewId)
@@ -137,37 +107,12 @@ class ProfileViewModel(
         }
     }
 
-    fun updateDietaryRestrictions(restrictions: List<String>) {
-        val userId = currentUserId.value ?: return
-
+    fun updateDietaryRestrictions(userId: String, restrictions: List<String>) {
         viewModelScope.launch {
             try {
                 userRepository.updateDietaryRestrictions(userId, restrictions)
-                val updatedUser = userRepository.getById(userId)
-                _currentUser.value = updatedUser
             } catch (e: Exception) {
                 _error.value = "Error al actualizar restricciones: ${e.message}"
-            }
-        }
-    }
-
-    fun refresh() {
-        currentUserId.value?.let { userId ->
-            loadUserData(userId)
-        } ?: loadFirstUser()
-    }
-
-    fun setCurrentUser(userId: String) {
-        viewModelScope.launch {
-            try {
-                val user = userRepository.getById(userId)
-                if (user != null) {
-                    currentUserId.value = userId
-                    _currentUser.value = user
-                    loadUserData(userId)
-                }
-            } catch (e: Exception) {
-                _error.value = "Error al cambiar usuario: ${e.message}"
             }
         }
     }

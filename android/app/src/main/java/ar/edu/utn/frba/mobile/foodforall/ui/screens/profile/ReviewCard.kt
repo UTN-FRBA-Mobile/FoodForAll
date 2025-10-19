@@ -86,7 +86,6 @@ fun ReviewCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Estrellas de rating
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -110,7 +109,6 @@ fun ReviewCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Comentario y restricción dietética
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

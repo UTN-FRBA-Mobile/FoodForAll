@@ -88,23 +88,19 @@ fun LocationPermissionGate(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
-    // ---- Estado base ----
     var foregroundGranted by remember { mutableStateOf(hasFineOrCoarse(activity)) }
     var attemptedForeground by remember { mutableStateOf(false) }
     var triedBackground by remember { mutableStateOf(false) }
 
-    // ---- Flags para ocultar rationales (descartables) ----
     var showForegroundRationale by rememberSaveable { mutableStateOf(true) }
     var showBackgroundRationale by rememberSaveable { mutableStateOf(true) }
 
-    // Cargar el valor almacenado
     LaunchedEffect(Unit) {
         val (fg, bg) = context.getRationaleVisibility()
         showForegroundRationale = fg
         showBackgroundRationale = bg
     }
 
-    // ---- Launchers ----
     val notificationsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { /* noop */ }
@@ -126,7 +122,6 @@ fun LocationPermissionGate(
         onResult(foregroundGranted)
     }
 
-    // Ajustes con result → re-chequear y recomponer
     val appSettingsLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
@@ -134,7 +129,6 @@ fun LocationPermissionGate(
         val bg = hasBackgroundLocation(activity)
         foregroundGranted = fg
 
-        // ⬇️ si ya está concedido, escondemos y persistimos
         if (fg && showForegroundRationale) {
             showForegroundRationale = false
             scope.launch { context.setRationaleVisibility(false, null) }
@@ -143,7 +137,7 @@ fun LocationPermissionGate(
             showBackgroundRationale = false
             scope.launch { context.setRationaleVisibility(null, false) }
         }
-        onResult(fg) // mantenemos que el mapa se habilite con foreground
+        onResult(fg)
     }
 
     fun openAppSettingsViaLauncher() {
@@ -154,7 +148,6 @@ fun LocationPermissionGate(
         appSettingsLauncher.launch(intent)
     }
 
-    // Revalidar permisos en ON_RESUME (por si el launcher no devuelve result)
     DisposableEffect(lifecycleOwner) {
         val obs = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -177,7 +170,6 @@ fun LocationPermissionGate(
         onDispose { lifecycleOwner.lifecycle.removeObserver(obs) }
     }
 
-    // ---- Señales de rationale / “no volver a preguntar” ----
     val shouldShowFine = remember {
         mutableStateOf(
             ActivityCompat.shouldShowRequestPermissionRationale(
@@ -202,7 +194,6 @@ fun LocationPermissionGate(
         )
     }
 
-    // Refrescar señales tras cada intento
     LaunchedEffect(foregroundGranted, triedBackground) {
         shouldShowFine.value =
             ActivityCompat.shouldShowRequestPermissionRationale(
@@ -241,7 +232,6 @@ fun LocationPermissionGate(
         (Build.VERSION.SDK_INT >= 30) &&
                 !hasBackgroundLocation(activity)
 
-    // ---- Flujo automático inicial ----
     LaunchedEffect(requestOnStart) {
         if (!requestOnStart) {
             onResult(foregroundGranted)
@@ -275,7 +265,6 @@ fun LocationPermissionGate(
         onResult(foregroundGranted)
     }
 
-    // ---- UI ----
     if (foregroundGranted) {
         content()
 

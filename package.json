@@ -2,7 +2,7 @@
   "name": "foodforall",
   "version": "1.0.0",
   "scripts": {
-    "emulators": "firebase emulators:start --only firestore --config firebase/firebase.json",
+    "emulators": "firebase emulators:start --only firestore,auth --project foodforall-22d50 --config firebase/firebase.json",
     "seed": "node firebase/seed.js"
   },
   "dependencies": {

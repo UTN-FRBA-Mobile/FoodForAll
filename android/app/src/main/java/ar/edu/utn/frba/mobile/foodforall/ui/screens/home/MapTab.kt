@@ -142,11 +142,9 @@ fun MapTab(
                     }
                 }.addOnFailureListener { e ->
                     viewModel.updateUserLocation(DEFAULT_LOCATION)
-                    Log.e("MapTab", "Error getting location", e)
                 }
             } catch (e: SecurityException) {
                 viewModel.updateUserLocation(DEFAULT_LOCATION)
-                Log.e("MapTab", "Error getting location", e)
             }
         } else {
             viewModel.updateUserLocation(DEFAULT_LOCATION)

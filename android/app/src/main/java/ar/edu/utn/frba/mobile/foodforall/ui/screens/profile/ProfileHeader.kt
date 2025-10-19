@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +31,8 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.User
 @Composable
 fun ProfileHeader(
     userProfile: User,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLogout: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -57,6 +62,7 @@ fun ProfileHeader(
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
@@ -73,6 +79,16 @@ fun ProfileHeader(
                 fontSize = 16.sp,
                 color = Color.Gray
             )
+        }
+
+        if (onLogout != null) {
+            IconButton(onClick = onLogout) {
+                Icon(
+                    imageVector = Icons.Filled.Logout,
+                    contentDescription = "Cerrar sesión",
+                    tint = Color.Gray
+                )
+            }
         }
     }
 }

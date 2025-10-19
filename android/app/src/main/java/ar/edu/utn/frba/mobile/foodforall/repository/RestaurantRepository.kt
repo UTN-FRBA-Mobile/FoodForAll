@@ -83,7 +83,7 @@ class RestaurantRepository(
 
         val docs = tasks.map { it.await() }.flatMap { it.documents }
 
-        return docs.mapNotNull { doc ->
+        val results = docs.mapNotNull { doc ->
             val restaurant = Restaurant.fromFirestore(doc) ?: return@mapNotNull null
 
             val distance = GeoFireUtils.getDistanceBetween(
@@ -99,6 +99,8 @@ class RestaurantRepository(
                 restaurant.copy(distanceKm = distanceKm)
             } else null
         }
+
+        return results
     }
 
     suspend fun findWithin(lat: Double, lon: Double, radius: Double) =

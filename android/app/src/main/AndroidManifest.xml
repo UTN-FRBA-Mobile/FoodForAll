@@ -1,19 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    <!-- Permiso necesario para poder acceder a los tiles de google maps -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-    <!-- Permiso para obtener la ubicacion del usuario -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
-    <!-- Permiso para saber si el usuario estuvo mas de x tiempo en un lugar -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <!-- Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
@@ -25,8 +21,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FoodForAll">
-        <!-- configuracion para google maps -->
+        android:theme="@style/Theme.FoodForAll"
+        android:networkSecurityConfig="@xml/network_security_config">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key"/>
