@@ -1,7 +1,7 @@
 package ar.edu.utn.frba.mobile.foodforall.repository
 
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.maps.model.LatLng

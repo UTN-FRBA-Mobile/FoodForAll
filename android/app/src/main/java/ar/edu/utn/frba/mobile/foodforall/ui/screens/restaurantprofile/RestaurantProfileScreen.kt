@@ -52,6 +52,7 @@ private val profileSections = listOf(
 fun RestaurantProfileScreen(
     restaurantId: String,
     onBack: () -> Unit,
+    onCreateReview: (restaurantId: String) -> Unit,
     viewModel: RestaurantProfileViewModel = viewModel()
 ) {
     val repository = remember { RestaurantRepository(FirebaseFirestore.getInstance()) }
@@ -94,51 +95,65 @@ fun RestaurantProfileScreen(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        TopAppBar(restaurant = restaurant!!, onBack = onBack)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Av. Libertador 5000\n12:00 - 00:00 hs",
-            modifier = Modifier.padding(horizontal = 16.dp),
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            profileSections.forEachIndexed { index, section ->
-                ProfileOption(
-                    icon = section.icon,
-                    label = section.title,
-                    isSelected = selectedSectionIndex == index,
-                    onClick = { selectedSectionIndex = index }
+    Scaffold(
+        contentWindowInsets = WindowInsets(0),
+        floatingActionButton = {
+            if (restaurant != null && !isLoading) {
+                ExtendedFloatingActionButton(
+                    onClick = { onCreateReview(restaurant!!.id) },
+                    icon = { Icon(Icons.Default.ThumbUp, contentDescription = "Crear reseña") },
+                    text = { Text("Crear reseña") }
                 )
             }
         }
-
-        Box(
+    ) { innerPadding ->
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
+                .background(Color.White)
+                .padding(innerPadding) // evita que el FAB tape el contenido
         ) {
-            when (profileSections[selectedSectionIndex]) {
-                is ProfileSection.Menu -> MenuTabContent()
-                is ProfileSection.Gallery -> GalleryTabContent()
-                is ProfileSection.Reviews -> ReviewsTabContent(
-                    reviews = reviews,
-                    isLoading = reviewsLoading
-                )
+            TopAppBar(restaurant = restaurant!!, onBack = onBack)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Av. Libertador 5000\n12:00 - 00:00 hs",
+                modifier = Modifier.padding(horizontal = 16.dp),
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                profileSections.forEachIndexed { index, section ->
+                    ProfileOption(
+                        icon = section.icon,
+                        label = section.title,
+                        isSelected = selectedSectionIndex == index,
+                        onClick = { selectedSectionIndex = index }
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when (profileSections[selectedSectionIndex]) {
+                    is ProfileSection.Menu -> MenuTabContent()
+                    is ProfileSection.Gallery -> GalleryTabContent()
+                    is ProfileSection.Reviews -> ReviewsTabContent(
+                        reviews = reviews,
+                        isLoading = reviewsLoading
+                    )
+                }
             }
         }
     }
@@ -336,5 +351,9 @@ fun ReviewsTabContent(
 @Preview(showBackground = true)
 @Composable
 fun RestaurantProfileScreenPreview() {
-    RestaurantProfileScreen(restaurantId = "6", onBack = {})
+    RestaurantProfileScreen(
+        restaurantId = "6",
+        onBack = {},
+        onCreateReview = { _ -> }
+    )
 }

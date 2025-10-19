@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.sp
 import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Review
-import ar.edu.utn.frba.mobile.foodforall.ui.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 
 @Composable
 fun ReviewCard(

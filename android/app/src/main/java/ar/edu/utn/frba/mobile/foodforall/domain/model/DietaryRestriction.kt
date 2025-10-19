@@ -1,4 +1,4 @@
-package ar.edu.utn.frba.mobile.foodforall.ui.model
+package ar.edu.utn.frba.mobile.foodforall.domain.model
 
 enum class DietaryRestriction(val emoji: String, val description: String, val key: String) {
     VEGETARIAN("🌽", "Vegetariano", "vegetarian"),

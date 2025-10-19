@@ -27,7 +27,7 @@ fun RestaurantListTab(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(),
     onRestaurantClick: (String) -> Unit = {},
-    onReviewClick: (Restaurant) -> Unit = {}
+    onReviewClick: (String) -> Unit = {}
 ) {
     val restaurants by viewModel.restaurants.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -70,7 +70,7 @@ fun RestaurantListTab(
                         RestaurantCard(
                             restaurant = restaurant,
                             onRestaurantClick = { onRestaurantClick(restaurant.id) },
-                            onReviewClick = onReviewClick
+                            onReviewClick = { onReviewClick(restaurant.id) }
                         )
                     }
                 }

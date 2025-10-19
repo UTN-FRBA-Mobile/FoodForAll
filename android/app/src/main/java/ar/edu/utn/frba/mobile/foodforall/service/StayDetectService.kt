@@ -87,7 +87,7 @@ class StayDetectService : LifecycleService() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)   // ¡OBLIGATORIO!
+            .setSmallIcon(R.mipmap.ic_food_for_all_transparent_full)   // ¡OBLIGATORIO!
             .setContentTitle("Rastreando ubicación")
             .setContentText("Servicio en primer plano activo")
             .setContentIntent(pi)
