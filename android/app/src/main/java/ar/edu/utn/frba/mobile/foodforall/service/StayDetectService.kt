@@ -96,7 +96,6 @@ class StayDetectService : LifecycleService() {
             .setCategory(Notification.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        // Android 14+ aconsejable:
         if (Build.VERSION.SDK_INT >= 34) {
             builder.setForegroundServiceBehavior(
                 NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
@@ -113,33 +112,26 @@ class StayDetectService : LifecycleService() {
     }
 
     private fun handleLocation(loc: Location) {
-        Log.d("STAYSERVICE","HandleLocation " + loc.latitude + "," + loc.longitude)
         val now = System.currentTimeMillis()
 
-        // Si no hay ancla, la fijamos
         if (anchor == null) {
             anchor = loc
             anchorSince = now
             return
         }
 
-        val dist = loc.distanceTo(anchor!!) // en metros
+        val dist = loc.distanceTo(anchor!!)
         val tol = maxStillRadiusBase.coerceAtLeast((loc.accuracy * accuracyFactor))
 
         if (dist <= tol) {
-            // seguimos quietos respecto del ancla
             val since = anchorSince ?: now
             if (now - since >= dwellMillis) {
-                // ¡Estancia detectada!
-                // Consultar Firestore alrededor del punto ancla
                 val lat = anchor!!.latitude
                 val lon = anchor!!.longitude
                 checkNearbyPlaces(lat, lon, 100.0)
-                // Reinicia la ventana para no disparar infinitamente
                 anchorSince = now
             }
         } else {
-            // nos movimos: nueva ancla
             anchor = loc
             anchorSince = now
         }
@@ -150,11 +142,8 @@ class StayDetectService : LifecycleService() {
             try {
                 val places = repo.findWithin(lat, lon, distance)
                 if (places.isNotEmpty()) {
-                    // TODO: tu acción (notificar, registrar, etc.)
-                    // Por ejemplo, mostrar notificación secundaria o emitir un callback.
                 }
             } catch (e: Exception) {
-                // TODO: log/retry
             }
         }
     }

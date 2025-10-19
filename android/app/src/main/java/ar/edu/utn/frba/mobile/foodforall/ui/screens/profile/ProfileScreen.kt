@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,17 +36,36 @@ private val profileTabs = listOf(ProfileTab.MyReviews, ProfileTab.Saved)
 
 @Composable
 fun ProfileScreen(
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
+    authViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val selectedTab = profileTabs[selectedTabIndex]
+    var showAuthDialog by rememberSaveable { mutableStateOf(false) }
 
-    val currentUser by viewModel.currentUser.collectAsState()
+    val authUser by authViewModel.currentUser.collectAsState()
     val userReviews by viewModel.userReviews.collectAsState()
     val savedRestaurants by viewModel.savedRestaurants.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    if (isLoading && currentUser == null) {
+    androidx.compose.runtime.LaunchedEffect(authUser?.id) {
+        authUser?.id?.let { userId ->
+            viewModel.loadUserData(userId)
+        }
+    }
+
+    if (authUser == null) {
+        showAuthDialog = true
+    }
+
+    if (showAuthDialog) {
+        ar.edu.utn.frba.mobile.foodforall.ui.screens.auth.AuthenticationDialog(
+            authViewModel = authViewModel,
+            onDismiss = { showAuthDialog = false }
+        )
+    }
+
+    if (isLoading && authUser == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -55,14 +75,15 @@ fun ProfileScreen(
         return
     }
 
-    val user = currentUser ?: return
+    val user = authUser ?: return
 
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
         ProfileHeader(
             userProfile = user,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            onLogout = { authViewModel.logout() }
         )
 
         TabRow(selectedTabIndex = selectedTabIndex) {

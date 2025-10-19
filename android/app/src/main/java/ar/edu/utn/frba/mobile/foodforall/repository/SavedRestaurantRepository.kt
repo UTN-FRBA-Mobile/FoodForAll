@@ -54,12 +54,8 @@ class SavedRestaurantRepository(
         }
     }
 
-    /**
-     * Guarda un restaurante para un usuario
-     */
     suspend fun save(userId: String, restaurantId: String): String {
         return try {
-            // Verificar si ya existe
             val existing = collection
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("restaurantId", restaurantId)
@@ -68,10 +64,8 @@ class SavedRestaurantRepository(
                 .await()
 
             if (!existing.isEmpty) {
-                // Ya existe, retornar el ID existente
                 existing.documents.first().id
             } else {
-                // Crear nuevo
                 val doc = collection.document()
                 val savedRestaurant = SavedRestaurant(
                     id = doc.id,

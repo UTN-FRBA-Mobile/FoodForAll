@@ -2,9 +2,11 @@ const admin = require('firebase-admin');
 const geofireCommon = require('geofire-common');
 
 process.env.FIRESTORE_EMULATOR_HOST = 'localhost:9000';
+process.env.FIREBASE_AUTH_EMULATOR_HOST = 'localhost:9099';
 admin.initializeApp({ projectId: 'foodforall-22d50' });
 
 const db = admin.firestore();
+const auth = admin.auth();
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -177,6 +179,16 @@ const sampleComments = [
 async function clearCollections() {
   console.log('🧹 Limpiando base de datos...');
 
+  try {
+    const listUsersResult = await auth.listUsers();
+    for (const userRecord of listUsersResult.users) {
+      await auth.deleteUser(userRecord.uid);
+    }
+    console.log(`   🗑️  Auth users: ${listUsersResult.users.length} usuarios eliminados`);
+  } catch (error) {
+    console.error('   ⚠️  Error limpiando usuarios de Auth:', error.message);
+  }
+
   const collections = ['restaurants', 'users', 'reviews', 'savedRestaurants'];
 
   for (const collectionName of collections) {
@@ -192,15 +204,31 @@ async function seedUsers() {
   console.log('\n👥 Creando usuarios...');
   const userIds = [];
   const now = Date.now();
+  const defaultPassword = 'test123';
 
   for (const user of sampleUsers) {
-    const docRef = await db.collection('users').add({
-      ...user,
-      createdAt: now,
-      updatedAt: now
-    });
-    userIds.push(docRef.id);
-    console.log(`   ✅ ${user.fullName}`);
+    try {
+      const userRecord = await auth.createUser({
+        email: user.email,
+        password: defaultPassword,
+        displayName: user.fullName
+      });
+
+      await db.collection('users').doc(userRecord.uid).set({
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        dietaryRestrictions: user.dietaryRestrictions,
+        createdAt: now,
+        updatedAt: now
+      });
+
+      userIds.push(userRecord.uid);
+      console.log(`   ✅ ${user.fullName} (${user.email} / ${defaultPassword})`);
+    } catch (error) {
+      console.error(`   ❌ Error creando ${user.fullName}:`, error.message);
+    }
   }
 
   return userIds;
@@ -336,9 +364,15 @@ async function seed() {
 
     console.log('\n🎉 ¡Seeding completado exitosamente!');
     console.log(`📊 Resumen:`);
-    console.log(`   - ${userIds.length} usuarios`);
+    console.log(`   - ${userIds.length} usuarios (contraseña: test123)`);
     console.log(`   - ${restaurantIds.length} restaurantes`);
-    console.log(`\n💡 Abrí http://localhost:4000 para ver los datos\n`);
+    console.log(`\n💡 Abrí http://localhost:4000 para ver los datos`);
+    console.log(`🔐 Podés hacer login con cualquiera de estos usuarios:`);
+    console.log(`   - juan@example.com / test123`);
+    console.log(`   - maria@example.com / test123`);
+    console.log(`   - carlos@example.com / test123`);
+    console.log(`   - ana@example.com / test123`);
+    console.log(`   - pedro@example.com / test123\n`);
 
     process.exit(0);
   } catch (error) {

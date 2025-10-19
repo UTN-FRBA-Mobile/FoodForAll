@@ -59,6 +59,7 @@ fun AppRoot() {
     var hasLocation by remember { mutableStateOf(false) }
 
     val sharedHomeViewModel: HomeViewModel = viewModel()
+    val sharedAuthViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel = viewModel()
 
 
     fun startStayDetectService(ctx: Context) {
@@ -114,6 +115,7 @@ fun AppRoot() {
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
+                    authViewModel = sharedAuthViewModel
                 )
             }
             composable(
