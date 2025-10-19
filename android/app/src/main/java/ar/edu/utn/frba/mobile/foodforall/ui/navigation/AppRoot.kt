@@ -1,5 +1,6 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.navigation
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +35,8 @@ import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.review.CreateReviewScreen
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.search.SearchScreen
 import androidx.compose.runtime.collectAsState
+import ar.edu.utn.frba.mobile.foodforall.utils.DeepLinkEvents
+import kotlinx.coroutines.flow.collectLatest
 
 object Routes {
     const val HOME = "home"
@@ -54,6 +58,15 @@ private val bottomItems = listOf(
     BottomItem(Routes.PROFILE, "Perfil", Icons.Filled.Person),
 )
 
+private fun handleDeepLinkIntent(intent: Intent?, navigateTo: (String) -> Unit) {
+    if (intent == null) return
+    val dest = intent.getStringExtra("dest")
+    val restaurantId = intent.getStringExtra("restaurantId")
+    if (dest == "reviews" && !restaurantId.isNullOrBlank()) {
+        navigateTo("review_create/$restaurantId")
+    }
+}
+
 @Composable
 fun AppRoot() {
     val navController = rememberNavController()
@@ -63,7 +76,30 @@ fun AppRoot() {
 
     val sharedHomeViewModel: HomeViewModel = viewModel()
     val sharedAuthViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel = viewModel()
+    val activity = LocalContext.current as Activity
 
+    LaunchedEffect(Unit) {
+        // 1) Procesamos el intent con el que se abrió la Activity
+        handleDeepLinkIntent(activity.intent) { route ->
+            // usamos launchSingleTop/restauración que ya definiste en la navegación del BottomBar
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+
+        // 2) Escuchamos intents posteriores (onNewIntent)
+        DeepLinkEvents.intents.collectLatest { newIntent ->
+            handleDeepLinkIntent(newIntent) { route ->
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
 
     fun startStayDetectService(ctx: Context) {
         val i = Intent(ctx, StayDetectService::class.java)

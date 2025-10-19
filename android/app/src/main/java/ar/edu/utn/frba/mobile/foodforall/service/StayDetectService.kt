@@ -11,12 +11,12 @@ import android.location.Location
 import android.os.Build
 import android.os.Looper
 import android.util.Log
-import androidx.compose.runtime.remember
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import ar.edu.utn.frba.mobile.foodforall.MainActivity
 import ar.edu.utn.frba.mobile.foodforall.R
+import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.repository.RestaurantRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -29,15 +29,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
+
 class StayDetectService : LifecycleService() {
     private lateinit var fused: FusedLocationProviderClient
 
     private var anchor: Location? = null
     private var anchorSince: Long? = null
 
-    private val dwellMillis = 10 * 60 * 1000L         // 10 minutos
+    private val dwellMillis = 1 * 60 * 1000L         // 10 minutos
     private val maxStillRadiusBase = 30.0             // 30 m base
     private val accuracyFactor = 2.0                  // tolerancia según precisión
+    private var lastSuggestedPlaceId: String? = null
+    private var lastSuggestionAtMillis: Long = 0L
+    //private val suggestionCooldownMillis = 12 * 60 * 60 * 1000L // 12 horas
     private val repo =  RestaurantRepository(FirebaseFirestore.getInstance())
 
     private fun ensureChannel(ctx: Context) {
@@ -57,10 +62,29 @@ class StayDetectService : LifecycleService() {
         }
     }
 
+    private fun ensureReviewChannel(ctx: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val id = REVIEW_CHANNEL_ID
+            if (nm.getNotificationChannel(id) == null) {
+                val channel = NotificationChannel(
+                    id,
+                    "Sugerencias de reseñas",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "Te sugiere dejar reseñas cuando detecta que estuviste en un lugar"
+                    setShowBadge(true)
+                }
+                nm.createNotificationChannel(channel)
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         fused = LocationServices.getFusedLocationProviderClient(this)
         ensureChannel(this)
+        ensureReviewChannel(this)
         startForeground(1, buildNotification())
         startLocationUpdates()
     }
@@ -128,7 +152,7 @@ class StayDetectService : LifecycleService() {
             if (now - since >= dwellMillis) {
                 val lat = anchor!!.latitude
                 val lon = anchor!!.longitude
-                checkNearbyPlaces(lat, lon, 100.0)
+                checkNearbyPlaces(lat, lon, 500000.0)
                 anchorSince = now
             }
         } else {
@@ -140,12 +164,97 @@ class StayDetectService : LifecycleService() {
     private fun checkNearbyPlaces(lat: Double, lon: Double, distance: Double) {
         lifecycleScope.launch {
             try {
-                val places = repo.findWithin(lat, lon, distance)
-                if (places.isNotEmpty()) {
+                val snaps = repo.findWithin(lat, lon, distance)
+                if (snaps.isNotEmpty()) {
+                    val nearest = withContext(Dispatchers.Default) {
+                        snaps.asSequence()
+                            .mapNotNull { doc ->
+                                val gp = doc.getGeoPoint("location")
+                                val rlat = gp?.latitude
+                                    ?: doc.getDouble("latitude")
+                                    ?: doc.getDouble("lat")
+                                val rlon = gp?.longitude
+                                    ?: doc.getDouble("longitude")
+                                    ?: doc.getDouble("lon")
+
+                                val rname = doc.getString("name")
+                                    ?: doc.getString("title")
+                                    ?: doc.getString("nombre")
+
+                                if (rlat == null || rlon == null || rname.isNullOrBlank()) {
+                                    null // snapshot incompleto: lo descartamos
+                                } else {
+                                    val distArr = FloatArray(1)
+                                    Location.distanceBetween(lat, lon, rlat, rlon, distArr)
+                                    // Guardamos lo necesario para decidir y notificar
+                                    Triple(doc.id, rname, distArr[0])
+                                }
+                            }
+                            .minByOrNull { it.third } // por distancia
+                    }
+
+                    if (nearest != null) {
+                        val (restaurantId, restaurantName, _) = nearest
+                        maybeShowReviewSuggestion(restaurantId, restaurantName)
+                    }
                 }
             } catch (e: Exception) {
+                Log.e("StayDetectService", "Error al consultar lugares cercanos", e)
             }
         }
+    }
+
+    private fun maybeShowReviewSuggestion(restaurantId: String, place: String) {
+        val now = System.currentTimeMillis()
+        val samePlace = (restaurantId == lastSuggestedPlaceId)
+        //val cooledDown = (now - lastSuggestionAtMillis) >= suggestionCooldownMillis
+
+        if (!samePlace ) { //|| cooledDown
+            showReviewSuggestionNotification(restaurantId, place)
+            lastSuggestedPlaceId = restaurantId
+            lastSuggestionAtMillis = now
+        } else {
+            Log.d("StayDetectService", "Sugerencia omitida por cooldown")
+        }
+    }
+
+    private fun showReviewSuggestionNotification(restaurantId: String, place: String) {
+        val context = this
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Intent para abrir la pantalla de reseñas dentro de MainActivity
+        val intent = Intent(context, MainActivity::class.java).apply {
+            // Señalamos a MainActivity que navegue a "reviews"
+            putExtra("dest", "reviews")
+            putExtra("restaurantId", restaurantId)
+            putExtra("restaurantName", place)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+
+        val pi = PendingIntent.getActivity(
+            context,
+            restaurantId.hashCode(), // requestCode único por restaurante
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or
+                    (if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0)
+        )
+
+        val title = "¿Te gustaría dejar una reseña?"
+        val text = "Puede ser que estuviste en \"${place}\", ¿te gustaría dejar una reseña?"
+
+        val notif = NotificationCompat.Builder(context, REVIEW_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_food_for_all_transparent_full)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(pi)              // tocar noti -> abre reseñas
+            .setAutoCancel(true)               // se descarta al tocar
+            .setCategory(Notification.CATEGORY_RECOMMENDATION)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
+        // Usamos un ID estable por restaurante para que no se acumulen infinitas notis
+        nm.notify(REVIEW_NOTIF_BASE_ID + (restaurantId.hashCode() and 0x0FFFFFFF), notif)
     }
 
 
@@ -159,6 +268,8 @@ class StayDetectService : LifecycleService() {
     companion object {
         private const val CHANNEL_ID = "stay_detect_channel"
         private const val CHANNEL_NAME = "Ubicación en segundo plano"
+        private const val REVIEW_CHANNEL_ID = "review_suggestions_channel"
+        private const val REVIEW_NOTIF_BASE_ID = 10_000
         private const val NOTIF_ID = 1
         private const val ACTION_STOP = "StayDetectService.STOP"
     }
