@@ -103,21 +103,29 @@ class RestaurantRepository(
         return results
     }
 
-    suspend fun findWithin(lat: Double, lon: Double, radius: Double) =
+    suspend fun findWithin(lat: Double, lon: Double, radiusMeters: Double) =
         withContext(Dispatchers.IO) {
-            val box = boundingBox(lat, lon, radius)
+            val box = boundingBox(lat, lon, radiusMeters)
 
             val snap = db.collection("places")
                 .whereGreaterThanOrEqualTo("lat", box.minLat)
                 .whereLessThanOrEqualTo("lat", box.maxLat)
-                .whereGreaterThanOrEqualTo("lon", box.minLon)
-                .whereLessThanOrEqualTo("lon", box.maxLon)
                 .get().await()
+
+            fun lonInBox(l: Double): Boolean {
+                val minL = box.minLon
+                val maxL = box.maxLon
+                return if (minL <= maxL) {
+                    l in minL..maxL
+                } else {
+                    l >= minL || l <= maxL
+                }
+            }
 
             snap.documents.filter { d ->
                 val plat = d.getDouble("lat") ?: return@filter false
-                val plon = d.getDouble("lon") ?: return@filter false
-                haversine(lat, lon, plat, plon) <= radius
+                val plon = d.getDouble("lon") ?: d.getDouble("lng") ?: return@filter false
+                lonInBox(plon) && haversine(lat, lon, plat, plon) <= radiusMeters
             }
         }
 
