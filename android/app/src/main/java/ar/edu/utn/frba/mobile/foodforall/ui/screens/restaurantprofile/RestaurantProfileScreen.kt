@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -16,10 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
 import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.repository.RestaurantRepository
@@ -57,12 +60,43 @@ fun RestaurantProfileScreen(
 ) {
     val repository = remember { RestaurantRepository(FirebaseFirestore.getInstance()) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var restaurant by remember { mutableStateOf<Restaurant?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedSectionIndex by remember { mutableIntStateOf(0) }
 
     val reviews by viewModel.reviews.collectAsState()
     val reviewsLoading by viewModel.isLoading.collectAsState()
+
+    fun shareRestaurant(restaurant: Restaurant) {
+        val dietaryRestrictionsText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
+            restaurant.dietaryRestrictions.joinToString(" ") { it.emoji }
+        } else {
+            "🍽️"
+        }
+        
+        // Crear enlace de Google Maps con las coordenadas del restaurante
+        val googleMapsUrl = "https://www.google.com/maps?q=${restaurant.lat},${restaurant.lng}"
+        
+        val shareText = buildString {
+            append("🍽️ ${restaurant.name}\n")
+            append("📍 Av. Libertador 5000\n")
+            append("🕐 12:00 - 00:00 hs\n")
+            append("$dietaryRestrictionsText Opciones: ${restaurant.dietaryRestrictions.joinToString(", ") { it.description }}\n")
+            append("🗺️ Ver en Google Maps: $googleMapsUrl\n")
+            append("\n")
+            append("¡Descubre más restoranes para tu restricción alimenticia en FoodForAll!")
+        }
+        
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+        }
+        
+        val chooser = Intent.createChooser(shareIntent, "Compartir restaurante")
+        context.startActivity(chooser)
+    }
 
     LaunchedEffect(restaurantId) {
         scope.launch {
@@ -113,7 +147,11 @@ fun RestaurantProfileScreen(
                 .background(Color.White)
                 .padding(innerPadding) // evita que el FAB tape el contenido
         ) {
-            TopAppBar(restaurant = restaurant!!, onBack = onBack)
+            TopAppBar(
+                restaurant = restaurant!!, 
+                onBack = onBack,
+                onShare = { shareRestaurant(restaurant!!) }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -162,7 +200,8 @@ fun RestaurantProfileScreen(
 @Composable
 fun TopAppBar(
     restaurant: Restaurant,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onShare: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -191,6 +230,19 @@ fun TopAppBar(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
+                tint = Color.White
+            )
+        }
+
+        IconButton(
+            onClick = onShare,
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = "Compartir restaurante",
                 tint = Color.White
             )
         }
