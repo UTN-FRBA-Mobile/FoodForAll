@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Share
@@ -56,6 +58,7 @@ fun RestaurantProfileScreen(
     restaurantId: String,
     onBack: () -> Unit,
     onCreateReview: (restaurantId: String) -> Unit,
+    authViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel,
     viewModel: RestaurantProfileViewModel = viewModel()
 ) {
     val repository = remember { RestaurantRepository(FirebaseFirestore.getInstance()) }
@@ -67,6 +70,8 @@ fun RestaurantProfileScreen(
 
     val reviews by viewModel.reviews.collectAsState()
     val reviewsLoading by viewModel.isLoading.collectAsState()
+    val isSaved by viewModel.isSaved.collectAsState()
+    val authUser by authViewModel.currentUser.collectAsState()
 
     fun shareRestaurant(restaurant: Restaurant) {
         val dietaryRestrictionsText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
@@ -107,6 +112,12 @@ fun RestaurantProfileScreen(
             }
         }
         viewModel.loadReviews(restaurantId)
+    }
+
+    LaunchedEffect(restaurantId, authUser?.id) {
+        authUser?.id?.let { userId ->
+            viewModel.checkIfSaved(userId, restaurantId)
+        }
     }
 
     if (isLoading) {
@@ -150,7 +161,13 @@ fun RestaurantProfileScreen(
             TopAppBar(
                 restaurant = restaurant!!, 
                 onBack = onBack,
-                onShare = { shareRestaurant(restaurant!!) }
+                onShare = { shareRestaurant(restaurant!!) },
+                onSave = { 
+                    authUser?.id?.let { userId ->
+                        viewModel.toggleSave(userId, restaurantId)
+                    }
+                },
+                isSaved = isSaved
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -201,7 +218,9 @@ fun RestaurantProfileScreen(
 fun TopAppBar(
     restaurant: Restaurant,
     onBack: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    onSave: () -> Unit,
+    isSaved: Boolean
 ) {
     Box(
         modifier = Modifier
@@ -244,6 +263,19 @@ fun TopAppBar(
                 imageVector = Icons.Default.Share,
                 contentDescription = "Compartir restaurante",
                 tint = Color.White
+            )
+        }
+        
+        IconButton(
+            onClick = onSave,
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.BottomEnd)
+        ) {
+            Icon(
+                imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                contentDescription = if (isSaved) "Quitar de guardados" else "Guardar restaurante",
+                tint = if (isSaved) Color.White else Color.White.copy(alpha = 0.8f)
             )
         }
 
@@ -406,6 +438,7 @@ fun RestaurantProfileScreenPreview() {
     RestaurantProfileScreen(
         restaurantId = "6",
         onBack = {},
-        onCreateReview = { _ -> }
+        onCreateReview = { _ -> },
+        authViewModel = ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel()
     )
 }

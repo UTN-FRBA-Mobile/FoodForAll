@@ -304,21 +304,32 @@ async function seedSavedRestaurants(userIds, restaurantIds) {
   const now = Date.now();
 
   for (const userId of userIds) {
-    const numToSave = randomInt(2, 4);
+    const numToSave = randomInt(3, 6);
     const shuffled = [...restaurantIds].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, numToSave);
 
+    const savedRestaurantNames = [];
     for (const restaurantId of selected) {
       await db.collection('savedRestaurants').add({
         userId,
         restaurantId,
         savedAt: now
       });
+      
+      // Obtener el nombre del restaurante para el log
+      const restaurant = sampleRestaurants[restaurantIds.indexOf(restaurantId)];
+      if (restaurant) {
+        savedRestaurantNames.push(restaurant.name);
+      }
+      
       count++;
     }
+    
+    const user = sampleUsers[userIds.indexOf(userId)];
+    console.log(`   ✅ ${user.fullName}: ${savedRestaurantNames.join(', ')}`);
   }
 
-  console.log(`   ✅ ${count} restaurantes guardados`);
+  console.log(`   ✅ Total: ${count} restaurantes guardados`);
 }
 
 async function updateRestaurantRatings(restaurantIds) {

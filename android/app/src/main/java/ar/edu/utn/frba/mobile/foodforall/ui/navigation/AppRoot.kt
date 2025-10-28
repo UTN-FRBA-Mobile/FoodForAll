@@ -157,7 +157,10 @@ fun AppRoot() {
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
-                    authViewModel = sharedAuthViewModel
+                    authViewModel = sharedAuthViewModel,
+                    onRestaurantClick = { restaurantId ->
+                        navController.navigate("restaurant_profile/$restaurantId")
+                    }
                 )
             }
             composable(
@@ -171,7 +174,8 @@ fun AppRoot() {
                         onCreateReview = { restaurantId ->
                             navController.navigate("review_create/$restaurantId")
                         },
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        authViewModel = sharedAuthViewModel
                     )
                 }
             }

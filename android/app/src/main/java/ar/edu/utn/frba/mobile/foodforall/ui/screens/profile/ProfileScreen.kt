@@ -37,7 +37,8 @@ private val profileTabs = listOf(ProfileTab.MyReviews, ProfileTab.Saved)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(),
-    authViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel
+    authViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel,
+    onRestaurantClick: (String) -> Unit = {}
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val selectedTab = profileTabs[selectedTabIndex]
@@ -111,7 +112,7 @@ fun ProfileScreen(
                 is ProfileTab.Saved -> {
                     SavedRestaurantsTab(
                         savedRestaurants = savedRestaurants,
-                        onRestaurantClick = { },
+                        onRestaurantClick = { restaurant -> onRestaurantClick(restaurant.id) },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
