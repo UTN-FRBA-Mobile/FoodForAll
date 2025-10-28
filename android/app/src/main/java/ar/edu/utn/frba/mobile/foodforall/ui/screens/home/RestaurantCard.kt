@@ -69,7 +69,7 @@ fun RestaurantCard(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .width(60.dp)
-                .height(if (cardHeight > 0) with(density) { cardHeight.toDp() } else 120.dp)
+                .height(if (cardHeight > 0) with(density) { (cardHeight.toDp()-6.dp) } else 114.dp)
                 .background(
                     color = Color(0xFFE91E63), // Rosa
                     shape = RoundedCornerShape(8.dp)
