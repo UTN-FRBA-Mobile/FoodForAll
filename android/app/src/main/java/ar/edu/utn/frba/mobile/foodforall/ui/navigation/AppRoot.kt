@@ -144,7 +144,8 @@ fun AppRoot() {
                     onCreateReviewClick = { restaurantId ->
                         navController.navigate("review_create/$restaurantId")
                     },
-                    viewModel = sharedHomeViewModel
+                    viewModel = sharedHomeViewModel,
+                    authViewModel = sharedAuthViewModel
                 )
             }
             composable(Routes.SEARCH) {

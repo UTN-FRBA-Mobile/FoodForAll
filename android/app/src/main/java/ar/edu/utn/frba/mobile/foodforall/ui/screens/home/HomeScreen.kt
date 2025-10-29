@@ -46,7 +46,8 @@ private val setSaver: Saver<Set<String>, ArrayList<String>> =
 fun HomeScreen(
     onRestaurantClick: (String) -> Unit,
     onCreateReviewClick: (String) -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    viewModel: HomeViewModel = viewModel(),
+    authViewModel: ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel = viewModel()
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedTab = homeTabs[selectedTabIndex]
@@ -70,7 +71,8 @@ fun HomeScreen(
                 is HomeTab.Map -> MapTab(
                     modifier = Modifier.fillMaxSize(),
                     viewModel = viewModel,
-                    onRestaurantClick = onRestaurantClick
+                    onRestaurantClick = onCreateReviewClick,
+                    authViewModel = authViewModel
                 )
                 is HomeTab.Restaurants -> RestaurantListTab(
                     modifier = Modifier.fillMaxSize(),

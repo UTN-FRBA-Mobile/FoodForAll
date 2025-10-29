@@ -10,30 +10,35 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -41,15 +46,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
 import ar.edu.utn.frba.mobile.foodforall.ui.components.BitmapDescriptorFromEmoji
 import ar.edu.utn.frba.mobile.foodforall.ui.components.LocationPermissionGate
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.GalleryTabContent
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.MenuTabContent
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.ProfileOption
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.ProfileSection
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileViewModel
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantReviewCard
+import ar.edu.utn.frba.mobile.foodforall.ui.viewmodel.AuthViewModel
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -80,7 +101,235 @@ fun rememberBitmapDescriptorFromRes(@DrawableRes id: Int): BitmapDescriptor {
     }
 }
 
+// Nueva Composable para el contenido del Perfil Completo (dentro del Sheet)
+@Composable
+fun FullRestaurantProfileInSheet(
+    restaurant: Restaurant,
+    authViewModel: AuthViewModel,
+    onBackToCompact: () -> Unit,
+    onCreateReview: (String) -> Unit
+) {
+    val viewModel: RestaurantProfileViewModel = viewModel()
+    val reviews by viewModel.reviews.collectAsState()
+    val reviewsLoading by viewModel.isLoading.collectAsState()
+    val isSaved by viewModel.isSaved.collectAsState()
+    val authUser by authViewModel.currentUser.collectAsState()
 
+    val profileSections = listOf(
+        ProfileSection.Menu,
+        ProfileSection.Gallery,
+        ProfileSection.Reviews
+    )
+
+    // LaunchedEffects para cargar datos y verificar estado de guardado
+    LaunchedEffect(restaurant.id) {
+        viewModel.loadReviews(restaurant.id)
+    }
+
+    LaunchedEffect(restaurant.id, authUser?.id) {
+        authUser?.id?.let { userId ->
+            viewModel.checkIfSaved(userId, restaurant.id)
+        }
+    }
+
+    // Estado para cambiar entre pestañas del perfil
+    var selectedSectionIndex by rememberSaveable { mutableStateOf(2) } // Reviews es el índice 2
+
+    // Contenedor principal para el contenido desplazable
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+            contentPadding = WindowInsets.ime.asPaddingValues()
+        ) {
+            item {
+                // Header con Imagen, Nombre y botón para volver a la vista compacta
+                RestaurantProfileSheetHeader(
+                    restaurant = restaurant,
+                    onBack = onBackToCompact, // Llama a la función para volver a vista compacta
+                    onSave = {
+                        authUser?.id?.let { userId ->
+                            viewModel.toggleSave(userId, restaurant.id)
+                        }
+                    },
+                    isSaved = isSaved,
+                    showSaveButton = authUser != null
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Av. Libertador 5000\n12:00 - 00:00 hs",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    fontSize = 14.sp, // Agregado .sp
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Opciones del Perfil (Tabs)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    profileSections.forEachIndexed { index, section ->
+                        ProfileOption(
+                            icon = section.icon,
+                            label = section.title,
+                            isSelected = selectedSectionIndex == index,
+                            onClick = { selectedSectionIndex = index }
+                        )
+                    }
+                }
+            }
+
+            // Contenido de la Sección Seleccionada
+            when (profileSections[selectedSectionIndex]) {
+                is ProfileSection.Menu -> item {
+                    Box(Modifier.padding(16.dp)) { MenuTabContent() }
+                }
+                is ProfileSection.Gallery -> item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp).padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { GalleryTabContent() }
+                }
+                is ProfileSection.Reviews -> {
+                    if (reviewsLoading) {
+                        item {
+                            Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    } else if (reviews.isEmpty()) {
+                        item {
+                            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("⭐", fontSize = 48.sp) // Agregado .sp
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("No hay reseñas aún", fontSize = 16.sp) // Agregado .sp
+                                }
+                            }
+                        }
+                    } else {
+                        items(reviews.size) { index ->
+                            RestaurantReviewCard(
+                                reviewWithUser = reviews[index]
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Espacio para el FAB (se debe mover el FAB fuera del LazyColumn)
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+
+        // FAB para crear reseña (Asegura que el FAB se muestre encima del LazyColumn)
+        ExtendedFloatingActionButton(
+            onClick = { onCreateReview(restaurant.id) },
+            icon = { Icon(Icons.Default.ThumbUp, contentDescription = "Crear reseña") },
+            text = { Text("Crear reseña") },
+            modifier = Modifier
+                .align(Alignment.BottomCenter) // Alineado al fondo del Box
+                .fillMaxWidth()
+                .padding(16.dp)
+        )
+    }
+}
+
+// Composable del Header del Sheet de Perfil Completo (sin cambios, solo se asegura la accesibilidad)
+@Composable
+fun RestaurantProfileSheetHeader(
+    restaurant: Restaurant,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+    isSaved: Boolean,
+    showSaveButton: Boolean
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+    ) {
+        AsyncImage(
+            imageUrl = restaurant.imageUrl,
+            contentDescription = restaurant.name,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+        )
+
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver",
+                tint = Color.White
+            )
+        }
+
+        IconButton(
+            onClick = { /* Lógica de Share */ },
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.TopEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Share,
+                contentDescription = "Compartir restaurante",
+                tint = Color.White
+            )
+        }
+
+        if (showSaveButton) {
+            IconButton(
+                onClick = onSave,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.BottomEnd)
+            ) {
+                Icon(
+                    imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                    contentDescription = if (isSaved) "Quitar de guardados" else "Guardar restaurante",
+                    tint = if (isSaved) Color.White else Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = restaurant.name,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                text = "@${restaurant.name.replace(" ", "").lowercase()}resto",
+                fontSize = 14.sp,
+                color = Color.LightGray
+            )
+        }
+    }
+}
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +337,8 @@ fun rememberBitmapDescriptorFromRes(@DrawableRes id: Int): BitmapDescriptor {
 fun MapTab(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(),
-    onRestaurantClick: (String) -> Unit = {}
+    onRestaurantClick: (String) -> Unit = {}, // Reutilizado para navegación a CreateReviewScreen
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var hasLocation by remember { mutableStateOf(false) }
     val cameraPositionState = rememberCameraPositionState {
@@ -101,13 +351,17 @@ fun MapTab(
     val scope = rememberCoroutineScope()
 
     var selectedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
+    // El skipPartiallyExpanded = false es crucial para permitir el estado compacto
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+
+    // Estado para controlar si estamos en la vista Compacta (false) o Perfil Completo (true)
+    var isFullProfile by rememberSaveable { mutableStateOf(false) }
 
     LocationPermissionGate(
         requestOnStart = true,
         onResult = { ok -> hasLocation = ok }
     ) {
-
+        // Lógica de permisos
     }
 
     LaunchedEffect(cameraPositionState) {
@@ -158,6 +412,19 @@ fun MapTab(
         }
     }
 
+    // Efecto para expandir/colapsar el sheet cuando cambia el modo de vista
+    LaunchedEffect(isFullProfile) {
+        if (selectedRestaurant != null) {
+            if (isFullProfile) {
+                // Si es Perfil Completo, se expande a pantalla completa
+                bottomSheetState.expand()
+            } else {
+                // Si es Compacto, se queda en parcialmente expandido (default)
+                bottomSheetState.partialExpand()
+            }
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -174,9 +441,12 @@ fun MapTab(
                     snippet = restaurant.snippet,
                     onInfoWindowClick = {
                         selectedRestaurant = restaurant
+                        // Asegura que siempre comience en vista compacta al abrir
+                        isFullProfile = false
                     },
                     onClick = {
                         selectedRestaurant = restaurant
+                        isFullProfile = false
                         true
                     }
                 )
@@ -185,22 +455,51 @@ fun MapTab(
 
         if (selectedRestaurant != null) {
             ModalBottomSheet(
-                onDismissRequest = { selectedRestaurant = null },
-                sheetState = bottomSheetState
+                onDismissRequest = {
+                    selectedRestaurant = null
+                    isFullProfile = false // Reinicia el estado al cerrar
+                },
+                sheetState = bottomSheetState,
+                // Asegura que no haya padding extra si el teclado está visible
+                //windowInsets = WindowInsets.ime
             ) {
-                RestaurantMarkerBottomSheet(
-                    restaurant = selectedRestaurant!!,
-                    onViewDetails = {
-                        onRestaurantClick(selectedRestaurant!!.id)
-                        selectedRestaurant = null
-                    },
-                    onDismiss = { selectedRestaurant = null }
-                )
+                // Aquí cambiamos el contenido según el estado
+                if (isFullProfile) {
+                    FullRestaurantProfileInSheet(
+                        restaurant = selectedRestaurant!!,
+                        authViewModel = authViewModel,
+                        onBackToCompact = {
+                            // Vuelve a la vista compacta al tocar la flecha de retroceso
+                            scope.launch {
+                                isFullProfile = false
+                            }
+                        },
+                        onCreateReview = { restaurantId ->
+                            // Navega fuera del mapa para crear reseña
+                            selectedRestaurant = null
+                            isFullProfile = false
+                            onRestaurantClick(restaurantId)
+                        }
+                    )
+                } else {
+                    RestaurantMarkerBottomSheet(
+                        restaurant = selectedRestaurant!!,
+                        onViewDetails = {
+                            // Cambia a vista de Perfil Completo
+                            isFullProfile = true
+                        },
+                        onDismiss = {
+                            selectedRestaurant = null
+                            isFullProfile = false
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+// Mantenemos RestaurantMarkerBottomSheet como estaba (ya usa onViewDetails para cambiar el estado)
 @Composable
 fun RestaurantMarkerBottomSheet(
     restaurant: Restaurant,
@@ -209,7 +508,7 @@ fun RestaurantMarkerBottomSheet(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth() // Cambiado a fillMaxWidth para consistencia
             .padding(16.dp)
     ) {
         AsyncImage(
@@ -314,7 +613,7 @@ fun RestaurantMarkerBottomSheet(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onViewDetails,
+            onClick = onViewDetails, // <--- Esto es lo que activa el cambio de estado a FullProfile
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
