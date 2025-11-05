@@ -1,14 +1,11 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.profile
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,14 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ar.edu.utn.frba.mobile.foodforall.R
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
+import ar.edu.utn.frba.mobile.foodforall.ui.components.AsyncImage
 
 @Composable
 fun SavedRestaurantCard(
@@ -53,51 +49,14 @@ fun SavedRestaurantCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            AsyncImage(
+                imageUrl = restaurant.imageUrl,
+                contentDescription = restaurant.name,
                 modifier = Modifier
                     .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
-            ) {
-                val imageResource = when (restaurant.name.lowercase()) {
-                    "panera rosa" -> R.drawable.panera_rosa
-                    "tomate" -> R.drawable.tomate
-                    "mi barrio" -> R.drawable.mi_barrio
-                    else -> null
-                }
-
-                if (imageResource != null) {
-                    Image(
-                        painter = painterResource(id = imageResource),
-                        contentDescription = restaurant.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    val backgroundColor = when (restaurant.name.lowercase()) {
-                        "mc donalds" -> Color(0xFFFFC107)
-                        "roldán" -> Color(0xFF9C27B0)
-                        "kansas" -> Color(0xFFFF9800)
-                        "la parrilla" -> Color(0xFFF44336)
-                        "sushi zen" -> Color(0xFF00BCD4)
-                        "pizza corner" -> Color(0xFF795548)
-                        else -> Color(0xFFE0E0E0)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(backgroundColor)
-                    ) {
-                        Text(
-                            text = restaurant.name.take(2).uppercase(),
-                            modifier = Modifier.align(Alignment.Center),
-                            fontSize = 14.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 
