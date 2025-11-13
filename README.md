@@ -4,12 +4,9 @@
 
 FoodForAll es una aplicación Android diseñada para ayudarte a encontrar restaurantes que ofrecen opciones compatibles con tus restricciones dietéticas. Ya seas vegetariano, vegano, celíaco, o tengas cualquier otra necesidad alimentaria especial, FoodForAll te conecta con los lugares perfectos para disfrutar de una comida deliciosa y segura.
 
-## 📱 Descripción para Google Play Store
+## 📱 Descripción
 
-### Descripción corta (80 caracteres)
 Encuentra restaurantes adaptados a tus restricciones alimentarias
-
-### Descripción completa
 
 **FoodForAll - Tu guía de restaurantes inclusivos**
 
