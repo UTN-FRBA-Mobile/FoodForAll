@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -79,17 +81,17 @@ fun CreateReviewScreen(
         }
         return
     }
-    
+
     val currentRestaurant = restaurant ?: run {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Restaurante no encontrado")
         }
         return
     }
-    
+
     Scaffold(
         topBar = {
-            TopAppBar(restaurant = currentRestaurant, onBack = onCancel)
+            CustomTopAppBar(restaurant = currentRestaurant, onBack = onCancel)
             Spacer(modifier = Modifier.height(16.dp))
         },
         bottomBar = {
@@ -206,15 +208,16 @@ fun CreateReviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
 
-private fun validate(rating: Float, comment: String): String? {
+fun validate(rating: Float, comment: String): String? {
     if (rating <= 0f) return "La calificación debe ser mayor a 0."
     if (comment.trim().length < 5) return "El comentario es muy corto."
     return null
 }
 
 @Composable
-private fun StarRating(
+fun StarRating(
     value: Float,
     onChange: (Float) -> Unit,
     max: Int = 5
@@ -234,7 +237,7 @@ private fun StarRating(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowRestrictions(
+fun FlowRestrictions(
     selected: DietaryRestriction,
     onSelect: (DietaryRestriction) -> Unit,
     modifier: Modifier = Modifier
@@ -265,7 +268,7 @@ private fun FlowRestrictions(
 }
 
 @Composable
-fun TopAppBar(
+fun CustomTopAppBar(
     restaurant: Restaurant,
     onBack: () -> Unit
 ) {

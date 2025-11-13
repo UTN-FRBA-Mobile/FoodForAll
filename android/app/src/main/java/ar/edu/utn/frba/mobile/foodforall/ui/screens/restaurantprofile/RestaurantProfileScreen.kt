@@ -73,7 +73,7 @@ fun RestaurantProfileScreen(
     val isSaved by viewModel.isSaved.collectAsState()
     val error by viewModel.error.collectAsState()
     val authUser by authViewModel.currentUser.collectAsState()
-    val snackbarHostState = androidx.compose.material3.rememberSnackbarHostState()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     
     androidx.compose.runtime.LaunchedEffect(error) {
         error?.let {

@@ -18,6 +18,7 @@ playServicesMapsVersion = "18.2.0"
 ui = "1.9.0"
 playServicesLocation = "21.3.0"
 lifecycleService = "2.9.4"
+media3CommonKtx = "1.8.0"
 
 
 [libraries]
@@ -47,6 +48,7 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 play-services-maps = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMaps" }
 play-services-maps-v1820 = { module = "com.google.android.gms:play-services-maps", version.ref = "playServicesMapsVersion" }
 androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleService" }
+androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
