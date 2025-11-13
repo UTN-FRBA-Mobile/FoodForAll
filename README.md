@@ -6,7 +6,7 @@ FoodForAll es una aplicación Android diseñada para ayudarte a encontrar restau
 
 ## 📱 Descripción para Google Play Store
 
-### Descripción corta (80 caracteres)
+### Descripción corta
 Encuentra restaurantes adaptados a tus restricciones alimentarias
 
 ### Descripción completa
