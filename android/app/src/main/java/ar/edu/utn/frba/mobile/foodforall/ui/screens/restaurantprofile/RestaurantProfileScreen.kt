@@ -71,7 +71,15 @@ fun RestaurantProfileScreen(
     val reviews by viewModel.reviews.collectAsState()
     val reviewsLoading by viewModel.isLoading.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
+    val error by viewModel.error.collectAsState()
     val authUser by authViewModel.currentUser.collectAsState()
+    val snackbarHostState = androidx.compose.material3.rememberSnackbarHostState()
+    
+    androidx.compose.runtime.LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
 
     fun shareRestaurant(restaurant: Restaurant) {
         val dietaryRestrictionsText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
@@ -130,22 +138,25 @@ fun RestaurantProfileScreen(
         return
     }
 
-    if (restaurant == null) {
+    val currentRestaurant = restaurant ?: run {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Restaurant not found")
+            Text("Restaurante no encontrado")
         }
         return
     }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
+        snackbarHost = {
+            androidx.compose.material3.SnackbarHost(hostState = snackbarHostState)
+        },
         floatingActionButton = {
-            if (restaurant != null && !isLoading) {
+            if (!isLoading) {
                 ExtendedFloatingActionButton(
-                    onClick = { onCreateReview(restaurant!!.id) },
+                    onClick = { onCreateReview(currentRestaurant.id) },
                     icon = { Icon(Icons.Default.ThumbUp, contentDescription = "Crear reseña") },
                     text = { Text("Crear reseña") }
                 )
@@ -156,15 +167,15 @@ fun RestaurantProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(innerPadding) // evita que el FAB tape el contenido
+                .padding(innerPadding)
         ) {
             TopAppBar(
-                restaurant = restaurant!!, 
+                restaurant = currentRestaurant, 
                 onBack = onBack,
-                onShare = { shareRestaurant(restaurant!!) },
+                onShare = { shareRestaurant(currentRestaurant) },
                 onSave = { 
                     authUser?.id?.let { userId ->
-                        viewModel.toggleSave(userId, restaurantId)
+                        viewModel.toggleSave(userId, currentRestaurant.id)
                     }
                 },
                 isSaved = isSaved

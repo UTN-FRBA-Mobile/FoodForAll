@@ -24,6 +24,7 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 @Composable
 fun MyReviewsTab(
     reviews: List<ReviewWithRestaurant>,
+    onRestaurantClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (reviews.isEmpty()) {
@@ -58,7 +59,14 @@ fun MyReviewsTab(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(reviews) { reviewWithRestaurant ->
-                ReviewCard(reviewWithRestaurant = reviewWithRestaurant)
+                ReviewCard(
+                    reviewWithRestaurant = reviewWithRestaurant,
+                    onRestaurantClick = {
+                        reviewWithRestaurant.restaurant?.id?.let { restaurantId ->
+                            onRestaurantClick(restaurantId)
+                        }
+                    }
+                )
             }
         }
     }

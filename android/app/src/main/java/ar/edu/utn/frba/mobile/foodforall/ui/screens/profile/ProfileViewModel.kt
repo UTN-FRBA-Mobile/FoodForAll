@@ -10,9 +10,14 @@ import ar.edu.utn.frba.mobile.foodforall.repository.ReviewRepository
 import ar.edu.utn.frba.mobile.foodforall.repository.SavedRestaurantRepository
 import ar.edu.utn.frba.mobile.foodforall.repository.UserRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class ReviewWithRestaurant(
@@ -33,8 +38,21 @@ class ProfileViewModel(
     private val _savedRestaurants = MutableStateFlow<List<Restaurant>>(emptyList())
     val savedRestaurants: StateFlow<List<Restaurant>> = _savedRestaurants.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _isLoadingReviews = MutableStateFlow(false)
+    val isLoadingReviews: StateFlow<Boolean> = _isLoadingReviews.asStateFlow()
+
+    private val _isLoadingSaved = MutableStateFlow(false)
+    val isLoadingSaved: StateFlow<Boolean> = _isLoadingSaved.asStateFlow()
+
+    val isLoading: StateFlow<Boolean> = combine(
+        _isLoadingReviews,
+        _isLoadingSaved
+    ) { reviews, saved -> reviews || saved }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -46,41 +64,57 @@ class ProfileViewModel(
 
     private fun loadUserReviews(userId: String) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _isLoadingReviews.value = true
             try {
                 val reviews = reviewRepository.getByUserId(userId)
 
                 val reviewsWithRestaurants = reviews.map { review ->
-                    val restaurant = restaurantRepository.getById(review.restaurantId)
-                    ReviewWithRestaurant(review, restaurant)
-                }
+                    async {
+                        val restaurant = restaurantRepository.getById(review.restaurantId)
+                        ReviewWithRestaurant(review, restaurant)
+                    }
+                }.awaitAll()
 
                 _userReviews.value = reviewsWithRestaurants
+            } catch (e: java.net.UnknownHostException) {
+                _error.value = "Sin conexión a internet. Verificá tu conexión."
+                _userReviews.value = emptyList()
+            } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                _error.value = "Error al conectar con el servidor. Intentá más tarde."
+                _userReviews.value = emptyList()
             } catch (e: Exception) {
-                _error.value = "Error al cargar reviews: ${e.message}"
+                _error.value = "No se pudieron cargar las reseñas. Intentá de nuevo."
                 _userReviews.value = emptyList()
             } finally {
-                _isLoading.value = false
+                _isLoadingReviews.value = false
             }
         }
     }
 
     private fun loadSavedRestaurants(userId: String) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _isLoadingSaved.value = true
             try {
                 val savedIds = savedRestaurantRepository.getSavedRestaurantIds(userId)
 
-                val restaurants = savedIds.mapNotNull { id ->
-                    restaurantRepository.getById(id)
-                }
+                val restaurants = savedIds.map { id ->
+                    async {
+                        restaurantRepository.getById(id)
+                    }
+                }.awaitAll().filterNotNull()
 
                 _savedRestaurants.value = restaurants
+            } catch (e: java.net.UnknownHostException) {
+                _error.value = "Sin conexión a internet. Verificá tu conexión."
+                _savedRestaurants.value = emptyList()
+            } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                _error.value = "Error al conectar con el servidor. Intentá más tarde."
+                _savedRestaurants.value = emptyList()
             } catch (e: Exception) {
-                _error.value = "Error al cargar restaurantes guardados: ${e.message}"
+                _error.value = "No se pudieron cargar los restaurantes guardados. Intentá de nuevo."
                 _savedRestaurants.value = emptyList()
             } finally {
-                _isLoading.value = false
+                _isLoadingSaved.value = false
             }
         }
     }

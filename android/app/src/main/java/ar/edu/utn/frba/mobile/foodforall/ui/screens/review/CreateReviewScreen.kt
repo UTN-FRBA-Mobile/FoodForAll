@@ -79,13 +79,19 @@ fun CreateReviewScreen(
         }
         return
     }
+    
+    val currentRestaurant = restaurant ?: run {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Restaurante no encontrado")
+        }
+        return
+    }
+    
     Scaffold(
         topBar = {
-            TopAppBar(restaurant = restaurant!!, onBack = onCancel)
-
+            TopAppBar(restaurant = currentRestaurant, onBack = onCancel)
             Spacer(modifier = Modifier.height(16.dp))
         },
-
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
                 Row(
@@ -102,7 +108,7 @@ fun CreateReviewScreen(
                                     isSubmitting = true
                                     val now = System.currentTimeMillis()
                                     val review = Review(
-                                        id = "", // Firestore lo completa
+                                        id = "",
                                         userId = currentUserId,
                                         restaurantId = restaurantId,
                                         rating = rating,
@@ -117,7 +123,6 @@ fun CreateReviewScreen(
 
                                     if (newId.isNotEmpty()) {
                                         val saved = review.copy(id = newId)
-
                                         val title = restaurantName ?: "Reseña publicada"
                                         val shortComment = if (saved.comment.length > 60)
                                             saved.comment.take(57) + "…"
@@ -129,11 +134,9 @@ fun CreateReviewScreen(
                                                 Toast.LENGTH_LONG
                                             )
                                             .show()
-
                                         onDone(saved)
                                     } else {
-                                        errorMsg =
-                                            "No se pudo guardar la reseña. Verificá tu conexión e intentá de nuevo."
+                                        errorMsg = "No se pudo guardar la reseña. Verificá tu conexión e intentá de nuevo."
                                     }
                                     isSubmitting = false
                                 }
@@ -155,11 +158,8 @@ fun CreateReviewScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // Rating
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Calificación", fontWeight = FontWeight.SemiBold)
-
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -176,7 +176,6 @@ fun CreateReviewScreen(
                 }
             }
 
-            // Restricción dietaria
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Tipo de reseña (restricción)", fontWeight = FontWeight.SemiBold)
                 FlowRestrictions(
@@ -185,7 +184,6 @@ fun CreateReviewScreen(
                 )
             }
 
-            // Comentario
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Comentario", fontWeight = FontWeight.SemiBold)
                 OutlinedTextField(
@@ -193,7 +191,7 @@ fun CreateReviewScreen(
                     onValueChange = { if (it.text.length <= 800) comment = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 180.dp),   // <- más alto; podés subir a 220.dp si querés
+                        .heightIn(min = 180.dp),
                     placeholder = { Text("Contanos tu experiencia…") },
                     supportingText = {
                         Text("${comment.text.length}/800", fontSize = 11.sp)
@@ -201,7 +199,6 @@ fun CreateReviewScreen(
                 )
             }
 
-            // Error
             errorMsg?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
@@ -209,7 +206,6 @@ fun CreateReviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
 
 private fun validate(rating: Float, comment: String): String? {
     if (rating <= 0f) return "La calificación debe ser mayor a 0."

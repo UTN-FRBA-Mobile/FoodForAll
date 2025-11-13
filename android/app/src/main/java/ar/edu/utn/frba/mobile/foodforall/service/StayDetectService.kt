@@ -138,20 +138,21 @@ class StayDetectService : LifecycleService() {
     private fun handleLocation(loc: Location) {
         val now = System.currentTimeMillis()
 
-        if (anchor == null) {
+        val currentAnchor = anchor
+        if (currentAnchor == null) {
             anchor = loc
             anchorSince = now
             return
         }
 
-        val dist = loc.distanceTo(anchor!!)
+        val dist = loc.distanceTo(currentAnchor)
         val tol = maxStillRadiusBase.coerceAtLeast((loc.accuracy * accuracyFactor))
 
         if (dist <= tol) {
             val since = anchorSince ?: now
             if (now - since >= dwellMillis) {
-                val lat = anchor!!.latitude
-                val lon = anchor!!.longitude
+                val lat = currentAnchor.latitude
+                val lon = currentAnchor.longitude
                 checkNearbyPlaces(lat, lon, 500000.0)
                 anchorSince = now
             }

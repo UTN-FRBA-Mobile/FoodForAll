@@ -12,12 +12,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -28,50 +31,65 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.HomeViewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.screens.home.RestaurantCard
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun SearchScreen(
     onRestaurantClick: (String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedDietFilters by remember { mutableStateOf(setOf<String>()) }
-    var selectedSort by remember { mutableStateOf<SortOption?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var debouncedSearchQuery by remember { mutableStateOf("") }
+    var selectedDietFilters by rememberSaveable { mutableStateOf(setOf<String>()) }
+    var selectedSort by rememberSaveable { mutableStateOf<SortOption?>(null) }
 
     val allRestaurants by viewModel.restaurants.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    val filteredRestaurants by remember {
+    LaunchedEffect(searchQuery) {
+        snapshotFlow { searchQuery }
+            .debounce(500)
+            .distinctUntilChanged()
+            .collect { debouncedSearchQuery = it }
+    }
+
+    val filteredRestaurants by remember(debouncedSearchQuery, selectedDietFilters, selectedSort, allRestaurants) {
         derivedStateOf {
-            var restaurants = allRestaurants
-
-            if (searchQuery.isNotBlank()) {
-                restaurants = restaurants.filter { restaurant ->
-                    restaurant.name.contains(searchQuery, ignoreCase = true) ||
-                            restaurant.description.contains(searchQuery, ignoreCase = true)
+            val searchLower = debouncedSearchQuery.lowercase()
+            val hasSearch = searchLower.isNotBlank()
+            val hasFilters = selectedDietFilters.isNotEmpty()
+            
+            val filtered = if (hasSearch || hasFilters) {
+                allRestaurants.filter { restaurant ->
+                    val matchesSearch = !hasSearch || 
+                        restaurant.name.lowercase().contains(searchLower) ||
+                        restaurant.description.lowercase().contains(searchLower)
+                    
+                    val matchesFilters = !hasFilters || 
+                        selectedDietFilters.all { filterKey ->
+                            val restriction = DietaryRestriction.fromKey(filterKey)
+                            restriction != null && restriction in restaurant.dietaryRestrictions
+                        }
+                    
+                    matchesSearch && matchesFilters
                 }
-            }
-
-            if (selectedDietFilters.isNotEmpty()) {
-                restaurants = restaurants.filter { restaurant ->
-                    selectedDietFilters.any { filterKey ->
-                        val restriction = DietaryRestriction.fromKey(filterKey)
-                        restriction != null && restriction in restaurant.dietaryRestrictions
-                    }
-                }
+            } else {
+                allRestaurants
             }
 
             when (selectedSort) {
                 SortOption.NEAREST -> {
-                    val withDistance = restaurants.filter { it.distanceKm != null }
-                    val withoutDistance = restaurants.filter { it.distanceKm == null }
+                    val (withDistance, withoutDistance) = filtered.partition { it.distanceKm != null }
                     withDistance.sortedBy { it.distanceKm ?: Float.MAX_VALUE } + withoutDistance
                 }
-                SortOption.BEST_RATED -> restaurants.sortedByDescending { it.rating }
-                null -> restaurants
+                SortOption.BEST_RATED -> filtered.sortedByDescending { it.rating }
+                null -> filtered
             }
         }
     }
+    
+    val isSearching = searchQuery != debouncedSearchQuery
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -81,7 +99,8 @@ fun SearchScreen(
             SearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                onClear = { searchQuery = "" }
+                onClear = { searchQuery = "" },
+                isSearching = isSearching
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -163,7 +182,7 @@ fun SearchScreen(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        if (searchQuery.isNotBlank() || selectedDietFilters.isNotEmpty()) {
+                        if (debouncedSearchQuery.isNotBlank() || selectedDietFilters.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Intenta ajustar los filtros o el término de búsqueda",
@@ -179,7 +198,7 @@ fun SearchScreen(
                 items(filteredRestaurants, key = { it.id }) { restaurant ->
                     RestaurantCard(
                         restaurant = restaurant,
-                        onRestaurantClick = { onRestaurantClick(restaurant.id) },
+                        onRestaurantClick = onRestaurantClick,
                         onReviewClick = { /* No-op for search screen */ }
                     )
                 }

@@ -8,6 +8,8 @@ import ar.edu.utn.frba.mobile.foodforall.repository.ReviewRepository
 import ar.edu.utn.frba.mobile.foodforall.repository.SavedRestaurantRepository
 import ar.edu.utn.frba.mobile.foodforall.repository.UserRepository
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,17 +41,26 @@ class RestaurantProfileViewModel(
     fun loadReviews(restaurantId: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            _error.value = null
             try {
                 val reviews = reviewRepository.getByRestaurantId(restaurantId)
                 
                 val reviewsWithUsers = reviews.map { review ->
-                    val user = userRepository.getById(review.userId)
-                    ReviewWithUser(review, user)
-                }
+                    async {
+                        val user = userRepository.getById(review.userId)
+                        ReviewWithUser(review, user)
+                    }
+                }.awaitAll()
                 
                 _reviews.value = reviewsWithUsers
+            } catch (e: java.net.UnknownHostException) {
+                _error.value = "Sin conexión a internet. Verificá tu conexión e intentá de nuevo."
+                _reviews.value = emptyList()
+            } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                _error.value = "Error al conectar con el servidor. Intentá más tarde."
+                _reviews.value = emptyList()
             } catch (e: Exception) {
-                _error.value = "Error al cargar reviews: ${e.message}"
+                _error.value = "No se pudieron cargar las reseñas. Intentá de nuevo."
                 _reviews.value = emptyList()
             } finally {
                 _isLoading.value = false
@@ -63,7 +74,7 @@ class RestaurantProfileViewModel(
                 val saved = savedRestaurantRepository.isSaved(userId, restaurantId)
                 _isSaved.value = saved
             } catch (e: Exception) {
-                _error.value = "Error al verificar estado de guardado: ${e.message}"
+                _isSaved.value = false
             }
         }
     }
@@ -73,8 +84,11 @@ class RestaurantProfileViewModel(
             try {
                 val newSavedState = savedRestaurantRepository.toggle(userId, restaurantId)
                 _isSaved.value = newSavedState
+                _error.value = null
+            } catch (e: java.net.UnknownHostException) {
+                _error.value = "Sin conexión. No se pudo guardar el restaurante."
             } catch (e: Exception) {
-                _error.value = "Error al guardar restaurante: ${e.message}"
+                _error.value = "No se pudo guardar el restaurante. Intentá de nuevo."
             }
         }
     }

@@ -149,6 +149,9 @@ fun AppRoot() {
                 )
             }
             composable(Routes.SEARCH) {
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    sharedHomeViewModel.clearFilters()
+                }
                 SearchScreen(
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
@@ -157,6 +160,9 @@ fun AppRoot() {
                 )
             }
             composable(Routes.PROFILE) {
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    sharedHomeViewModel.clearFilters()
+                }
                 ProfileScreen(
                     authViewModel = sharedAuthViewModel,
                     onRestaurantClick = { restaurantId ->

@@ -53,8 +53,14 @@ class HomeViewModel(
                 _restaurants.value = result
                     .map { it.withDistance(_userLocation.value) }
                     .sortedByDescending { it.rating }
+            } catch (e: java.net.UnknownHostException) {
+                _error.value = "Sin conexión a internet. Verificá tu conexión."
+                _restaurants.value = emptyList()
+            } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                _error.value = "Error al conectar con el servidor. Intentá más tarde."
+                _restaurants.value = emptyList()
             } catch (e: Exception) {
-                _error.value = "Error al cargar restaurantes: ${e.message}"
+                _error.value = "No se pudieron cargar los restaurantes. Intentá de nuevo."
                 _restaurants.value = emptyList()
             } finally {
                 _isLoading.value = false
@@ -82,30 +88,6 @@ class HomeViewModel(
         applyFilters(current)
     }
 
-    fun searchRestaurants(query: String) {
-        if (query.isBlank()) {
-            loadRestaurants()
-            return
-        }
-
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val allRestaurants = repository.getAll()
-                _restaurants.value = allRestaurants
-                    .filter {
-                        it.name.contains(query, ignoreCase = true) ||
-                        it.description.contains(query, ignoreCase = true)
-                    }
-                    .map { it.withDistance(_userLocation.value) }
-                    .sortedByDescending { it.rating }
-            } catch (e: Exception) {
-                _error.value = "Error al buscar restaurantes: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
 
     fun refresh() {
         loadRestaurants()

@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +37,13 @@ fun RestaurantListTab(
     val restaurants by viewModel.restaurants.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    var showError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(error) {
+        if (error != null) {
+            showError = true
+        }
+    }
 
     Box(
         modifier = modifier
@@ -45,13 +57,21 @@ fun RestaurantListTab(
                 )
             }
             error != null && restaurants.isEmpty() -> {
-                Text(
-                    text = error ?: "Error desconocido",
+                Column(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(16.dp),
-                    color = Color.Red
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = error ?: "Error desconocido",
+                        color = Color.Red,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Button(onClick = { viewModel.refresh() }) {
+                        Text("Reintentar")
+                    }
+                }
             }
             restaurants.isEmpty() -> {
                 Text(
@@ -69,8 +89,8 @@ fun RestaurantListTab(
                     items(restaurants, key = { it.id }) { restaurant ->
                         RestaurantCard(
                             restaurant = restaurant,
-                            onRestaurantClick = { onRestaurantClick(restaurant.id) },
-                            onReviewClick = { onReviewClick(restaurant.id) }
+                            onRestaurantClick = onRestaurantClick,
+                            onReviewClick = onReviewClick
                         )
                     }
                 }

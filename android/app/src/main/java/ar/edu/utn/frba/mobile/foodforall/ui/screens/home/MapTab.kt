@@ -101,19 +101,29 @@ fun rememberBitmapDescriptorFromRes(@DrawableRes id: Int): BitmapDescriptor {
     }
 }
 
-// Nueva Composable para el contenido del Perfil Completo (dentro del Sheet)
 @Composable
 fun FullRestaurantProfileInSheet(
     restaurant: Restaurant,
     authViewModel: AuthViewModel,
     onBackToCompact: () -> Unit,
-    onCreateReview: (String) -> Unit
+    onCreateReview: (String) -> Unit,
+    viewModel: RestaurantProfileViewModel = viewModel()
 ) {
-    val viewModel: RestaurantProfileViewModel = viewModel()
     val reviews by viewModel.reviews.collectAsState()
     val reviewsLoading by viewModel.isLoading.collectAsState()
     val isSaved by viewModel.isSaved.collectAsState()
+    val error by viewModel.error.collectAsState()
     val authUser by authViewModel.currentUser.collectAsState()
+    val snackbarHostState = androidx.compose.material3.rememberSnackbarHostState()
+    val scope = rememberCoroutineScope()
+    
+    LaunchedEffect(error) {
+        error?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+            }
+        }
+    }
 
     val profileSections = listOf(
         ProfileSection.Menu,
@@ -230,7 +240,11 @@ fun FullRestaurantProfileInSheet(
             }
         }
 
-        // FAB para crear reseña (Asegura que el FAB se muestre encima del LazyColumn)
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+
         ExtendedFloatingActionButton(
             onClick = { onCreateReview(restaurant.id) },
             icon = { Icon(Icons.Default.ThumbUp, contentDescription = "Crear reseña") },
@@ -337,8 +351,9 @@ fun RestaurantProfileSheetHeader(
 fun MapTab(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(),
-    onRestaurantClick: (String) -> Unit = {}, // Reutilizado para navegación a CreateReviewScreen
-    authViewModel: AuthViewModel = viewModel()
+    onRestaurantClick: (String) -> Unit = {},
+    authViewModel: AuthViewModel = viewModel(),
+    restaurantProfileViewModel: RestaurantProfileViewModel = viewModel()
 ) {
     var hasLocation by remember { mutableStateOf(false) }
     val cameraPositionState = rememberCameraPositionState {
@@ -463,36 +478,35 @@ fun MapTab(
                 // Asegura que no haya padding extra si el teclado está visible
                 //windowInsets = WindowInsets.ime
             ) {
-                // Aquí cambiamos el contenido según el estado
-                if (isFullProfile) {
-                    FullRestaurantProfileInSheet(
-                        restaurant = selectedRestaurant!!,
-                        authViewModel = authViewModel,
-                        onBackToCompact = {
-                            // Vuelve a la vista compacta al tocar la flecha de retroceso
-                            scope.launch {
+                selectedRestaurant?.let { restaurant ->
+                    if (isFullProfile) {
+                        FullRestaurantProfileInSheet(
+                            restaurant = restaurant,
+                            authViewModel = authViewModel,
+                            onBackToCompact = {
+                                scope.launch {
+                                    isFullProfile = false
+                                }
+                            },
+                            onCreateReview = { restaurantId ->
+                                selectedRestaurant = null
+                                isFullProfile = false
+                                onRestaurantClick(restaurantId)
+                            },
+                            viewModel = restaurantProfileViewModel
+                        )
+                    } else {
+                        RestaurantMarkerBottomSheet(
+                            restaurant = restaurant,
+                            onViewDetails = {
+                                isFullProfile = true
+                            },
+                            onDismiss = {
+                                selectedRestaurant = null
                                 isFullProfile = false
                             }
-                        },
-                        onCreateReview = { restaurantId ->
-                            // Navega fuera del mapa para crear reseña
-                            selectedRestaurant = null
-                            isFullProfile = false
-                            onRestaurantClick(restaurantId)
-                        }
-                    )
-                } else {
-                    RestaurantMarkerBottomSheet(
-                        restaurant = selectedRestaurant!!,
-                        onViewDetails = {
-                            // Cambia a vista de Perfil Completo
-                            isFullProfile = true
-                        },
-                        onDismiss = {
-                            selectedRestaurant = null
-                            isFullProfile = false
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

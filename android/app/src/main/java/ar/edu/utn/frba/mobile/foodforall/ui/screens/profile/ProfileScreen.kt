@@ -7,14 +7,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,6 +32,7 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Review
 import ar.edu.utn.frba.mobile.foodforall.domain.model.User
 import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
+import kotlinx.coroutines.launch
 
 sealed class ProfileTab(val title: String) {
     data object MyReviews : ProfileTab("Mis Reseñas")
@@ -48,10 +55,21 @@ fun ProfileScreen(
     val userReviews by viewModel.userReviews.collectAsState()
     val savedRestaurants by viewModel.savedRestaurants.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    androidx.compose.runtime.LaunchedEffect(authUser?.id) {
+    LaunchedEffect(authUser?.id) {
         authUser?.id?.let { userId ->
             viewModel.loadUserData(userId)
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            scope.launch {
+                snackbarHostState.showSnackbar(it)
+            }
         }
     }
 
@@ -78,9 +96,16 @@ fun ProfileScreen(
 
     val user = authUser ?: return
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
         ProfileHeader(
             userProfile = user,
             modifier = Modifier.fillMaxWidth(),
@@ -106,6 +131,7 @@ fun ProfileScreen(
                 is ProfileTab.MyReviews -> {
                     MyReviewsTab(
                         reviews = userReviews,
+                        onRestaurantClick = onRestaurantClick,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

@@ -1,6 +1,7 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 @Composable
 fun ReviewCard(
     reviewWithRestaurant: ReviewWithRestaurant,
+    onRestaurantClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val review = reviewWithRestaurant.review
@@ -42,7 +44,8 @@ fun ReviewCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable(onClick = onRestaurantClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {

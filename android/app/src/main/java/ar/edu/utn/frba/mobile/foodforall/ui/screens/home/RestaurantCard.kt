@@ -45,8 +45,8 @@ import kotlin.math.roundToInt
 @Composable
 fun RestaurantCard(
     restaurant: Restaurant,
-    onRestaurantClick: (Restaurant) -> Unit = {},
-    onReviewClick: (Restaurant) -> Unit = {}
+    onRestaurantClick: (String) -> Unit = {},
+    onReviewClick: (String) -> Unit = {}
 ) {
     var offsetX by remember { mutableFloatStateOf(0f) }
     var cardHeight by remember { mutableFloatStateOf(0f) }
@@ -75,8 +75,7 @@ fun RestaurantCard(
                     shape = RoundedCornerShape(8.dp)
                 )
                 .clickable {
-                    // Si el usuario toca el botón, disparamos la acción (y podemos cerrar)
-                    onReviewClick(restaurant)
+                    onReviewClick(restaurant.id)
                 }
         ) {
             Text(
@@ -118,12 +117,11 @@ fun RestaurantCard(
                     }
                 }
                 .clickable {
-                    // si está abierto, el primer tap cierra; si no, navega
                     if (isRevealed) {
                         offsetX = 0f
                         isRevealed = false
                     } else {
-                        onRestaurantClick(restaurant)
+                        onRestaurantClick(restaurant.id)
                     }
                 },
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),

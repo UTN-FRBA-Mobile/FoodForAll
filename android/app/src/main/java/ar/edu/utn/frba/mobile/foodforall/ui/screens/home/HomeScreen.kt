@@ -27,6 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ar.edu.utn.frba.mobile.foodforall.ui.components.FilterPillButton
 import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
+import ar.edu.utn.frba.mobile.foodforall.ui.screens.restaurantprofile.RestaurantProfileViewModel
 
 sealed class HomeTab (val title: String) {
     data object Map : HomeTab("Mapa")
@@ -59,6 +60,8 @@ fun HomeScreen(
         mutableStateOf(emptySet<String>())
     }
 
+    val restaurantProfileViewModel: RestaurantProfileViewModel = viewModel()
+
     Box(Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -72,7 +75,8 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     viewModel = viewModel,
                     onRestaurantClick = onCreateReviewClick,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
+                    restaurantProfileViewModel = restaurantProfileViewModel
                 )
                 is HomeTab.Restaurants -> RestaurantListTab(
                     modifier = Modifier.fillMaxSize(),
