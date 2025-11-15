@@ -1,7 +1,9 @@
 package ar.edu.utn.frba.mobile.foodforall.ui.screens.home
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -101,6 +103,41 @@ fun rememberBitmapDescriptorFromRes(@DrawableRes id: Int): BitmapDescriptor {
     }
 }
 
+fun shareRestaurant(context: Context, restaurant: Restaurant) {
+    val dietaryText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
+        restaurant.dietaryRestrictions.joinToString(" ") { it.emoji }
+    } else {
+        "🍽️"
+    }
+
+    val shareText = buildString {
+        append("🍽️ ${restaurant.name}\n")
+        restaurant.snippet?.let {
+            append("$it\n")
+        }
+        append("$dietaryText\n")
+        append("\nDescubrí más restaurantes en FoodForAll ✨")
+    }
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+
+    val chooser = Intent.createChooser(shareIntent, "Compartir restaurante")
+
+    try {
+        if (context is Activity) {
+            context.startActivity(chooser)
+        } else {
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+        }
+    } catch (e: Exception) {
+        Log.e("RestaurantShare", "Error al compartir restaurante", e)
+    }
+}
+
 @Composable
 fun FullRestaurantProfileInSheet(
     restaurant: Restaurant,
@@ -144,7 +181,7 @@ fun FullRestaurantProfileInSheet(
 
     // Estado para cambiar entre pestañas del perfil
     var selectedSectionIndex by rememberSaveable { mutableStateOf(2) } // Reviews es el índice 2
-
+    val context = LocalContext.current
     // Contenedor principal para el contenido desplazable
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -164,7 +201,8 @@ fun FullRestaurantProfileInSheet(
                         }
                     },
                     isSaved = isSaved,
-                    showSaveButton = authUser != null
+                    showSaveButton = authUser != null,
+                    onShare = { shareRestaurant(context, restaurant) }
                 )
             }
 
@@ -264,7 +302,8 @@ fun RestaurantProfileSheetHeader(
     onBack: () -> Unit,
     onSave: () -> Unit,
     isSaved: Boolean,
-    showSaveButton: Boolean
+    showSaveButton: Boolean,
+    onShare: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -298,7 +337,7 @@ fun RestaurantProfileSheetHeader(
         }
 
         IconButton(
-            onClick = { /* Lógica de Share */ },
+            onClick = onShare,
             modifier = Modifier
                 .padding(16.dp)
                 .align(Alignment.TopEnd)

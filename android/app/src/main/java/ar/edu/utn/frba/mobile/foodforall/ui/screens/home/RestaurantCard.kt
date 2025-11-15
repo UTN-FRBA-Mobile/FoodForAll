@@ -3,6 +3,7 @@ package ar.edu.utn.frba.mobile.foodforall.ui.screens.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,7 +94,7 @@ fun RestaurantCard(
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .onSizeChanged { size -> cardHeight = size.height.toFloat() }
                 .pointerInput(Unit) {
-                    detectDragGestures(
+                    detectHorizontalDragGestures(
                         onDragEnd = {
                             // encaje al soltar
                             if (offsetX <= -revealThreshold) {
@@ -103,18 +104,19 @@ fun RestaurantCard(
                                 offsetX = 0f
                                 isRevealed = false
                             }
-                        }
-                    ) { _, drag ->
-                        val newX = offsetX + drag.x
-                        // limitar entre 0 (cerrado) y -actionWidthPx (abierto)
-                        offsetX = newX.coerceIn(-actionWidthPx, 0f)
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            val newX = offsetX + dragAmount
+                            // limitar entre 0 (cerrado) y -actionWidthPx (abierto)
+                            offsetX = newX.coerceIn(-actionWidthPx, 0f)
 
-                        // si ya estaba revelado y arrastra un poco a la derecha, cerramos
-                        if (isRevealed && drag.x > 12f) {
-                            offsetX = 0f
-                            isRevealed = false
+                            // si ya estaba revelado y arrastra un poco a la derecha, cerramos
+                            if (isRevealed && dragAmount > 12f) {
+                                offsetX = 0f
+                                isRevealed = false
+                            }
                         }
-                    }
+                    )
                 }
                 .clickable {
                     if (isRevealed) {

@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun SearchScreen(
     onRestaurantClick: (String) -> Unit,
+    onReviewClick: (String) -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -199,7 +200,7 @@ fun SearchScreen(
                     RestaurantCard(
                         restaurant = restaurant,
                         onRestaurantClick = onRestaurantClick,
-                        onReviewClick = { /* No-op for search screen */ }
+                        onReviewClick = onReviewClick
                     )
                 }
             }

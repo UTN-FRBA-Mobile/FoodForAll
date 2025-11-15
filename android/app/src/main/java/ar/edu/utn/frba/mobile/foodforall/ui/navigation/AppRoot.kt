@@ -156,6 +156,9 @@ fun AppRoot() {
                     onRestaurantClick = { restaurantId ->
                         navController.navigate("restaurant_profile/$restaurantId")
                     },
+                    onReviewClick = { restaurantId ->
+                        navController.navigate("review_create/$restaurantId")
+                    },
                     viewModel = sharedHomeViewModel
                 )
             }

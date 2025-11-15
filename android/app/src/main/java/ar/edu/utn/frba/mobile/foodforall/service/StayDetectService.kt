@@ -31,6 +31,7 @@ import kotlinx.coroutines.withContext
 
 
 
+
 class StayDetectService : LifecycleService() {
     private lateinit var fused: FusedLocationProviderClient
 
@@ -258,6 +259,26 @@ class StayDetectService : LifecycleService() {
         nm.notify(REVIEW_NOTIF_BASE_ID + (restaurantId.hashCode() and 0x0FFFFFFF), notif)
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_FORCE_REVIEW -> {
+                val restaurantId = intent.getStringExtra(EXTRA_RESTAURANT_ID)
+                val restaurantName = intent.getStringExtra(EXTRA_RESTAURANT_NAME)
+
+                if (!restaurantId.isNullOrBlank() && !restaurantName.isNullOrBlank()) {
+                    // Disparamos el mismo flujo que cuando detecta un lugar real
+                    maybeShowReviewSuggestion(restaurantId, restaurantName)
+                }
+            }
+
+            ACTION_STOP -> {
+                stopSelf()
+            }
+        }
+
+        return super.onStartCommand(intent, flags, startId)
+    }
+
 
 
 
@@ -273,6 +294,10 @@ class StayDetectService : LifecycleService() {
         private const val REVIEW_NOTIF_BASE_ID = 10_000
         private const val NOTIF_ID = 1
         private const val ACTION_STOP = "StayDetectService.STOP"
+        const val ACTION_FORCE_REVIEW =
+            "ar.edu.utn.frba.mobile.foodforall.service.ACTION_FORCE_REVIEW"
+        const val EXTRA_RESTAURANT_ID = "extra_restaurant_id"
+        const val EXTRA_RESTAURANT_NAME = "extra_restaurant_name"
     }
 }
 
