@@ -39,6 +39,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.location.Geocoder
+import java.util.Locale
 
 sealed class ProfileSection(val title: String, val icon: ImageVector) {
     data object Menu : ProfileSection("Carta", Icons.Default.List)
@@ -67,6 +71,7 @@ fun RestaurantProfileScreen(
     var restaurant by remember { mutableStateOf<Restaurant?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedSectionIndex by remember { mutableIntStateOf(0) }
+    var restaurantAddress by remember { mutableStateOf<String?>(null) }
 
     val reviews by viewModel.reviews.collectAsState()
     val reviewsLoading by viewModel.isLoading.collectAsState()
@@ -81,6 +86,33 @@ fun RestaurantProfileScreen(
         }
     }
 
+    // Función para obtener la dirección usando geocoding nativo
+    suspend fun getAddressFromCoordinates(lat: Double, lng: Double): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val address = addresses[0]
+                    // Construir una dirección legible
+                    val addressParts = mutableListOf<String>()
+                    address.thoroughfare?.let { addressParts.add(it) }
+                    address.subThoroughfare?.let { addressParts.add(it) }
+                    if (addressParts.isEmpty()) {
+                        address.featureName?.let { addressParts.add(it) }
+                    }
+                    address.locality?.let { addressParts.add(it) }
+                    addressParts.joinToString(", ").takeIf { it.isNotEmpty() }
+                        ?: address.getAddressLine(0)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     fun shareRestaurant(restaurant: Restaurant) {
         val dietaryRestrictionsText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
             restaurant.dietaryRestrictions.joinToString(" ") { it.emoji }
@@ -88,15 +120,12 @@ fun RestaurantProfileScreen(
             "🍽️"
         }
         
-        // Crear enlace de Google Maps con las coordenadas del restaurante
-        val googleMapsUrl = "https://www.google.com/maps?q=${restaurant.lat},${restaurant.lng}"
-        
+        val addressText = restaurantAddress ?: "Dirección no disponible"
         val shareText = buildString {
             append("🍽️ ${restaurant.name}\n")
-            append("📍 Av. Libertador 5000\n")
+            append("📍 $addressText\n")
             append("🕐 12:00 - 00:00 hs\n")
             append("$dietaryRestrictionsText Opciones: ${restaurant.dietaryRestrictions.joinToString(", ") { it.description }}\n")
-            append("🗺️ Ver en Google Maps: $googleMapsUrl\n")
             append("\n")
             append("¡Descubre más restoranes para tu restricción alimenticia en FoodForAll!")
         }
@@ -115,6 +144,10 @@ fun RestaurantProfileScreen(
         scope.launch {
             try {
                 restaurant = repository.getById(restaurantId)
+                // Obtener la dirección usando geocoding
+                restaurant?.let { rest ->
+                    restaurantAddress = getAddressFromCoordinates(rest.lat, rest.lng)
+                }
             } finally {
                 isLoading = false
             }
@@ -184,7 +217,7 @@ fun RestaurantProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Av. Libertador 5000\n12:00 - 00:00 hs",
+                text = "${restaurantAddress ?: "Cargando dirección..."}\n12:00 - 00:00 hs",
                 modifier = Modifier.padding(horizontal = 16.dp),
                 fontSize = 14.sp,
                 color = Color.Gray

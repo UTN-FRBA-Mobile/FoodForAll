@@ -90,6 +90,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.location.Geocoder
+import java.util.Locale
 
 val DEFAULT_LOCATION = LatLng(-34.598666, -58.419950)
 const val DEFAULT_ZOOM = 14f
@@ -103,20 +107,24 @@ fun rememberBitmapDescriptorFromRes(@DrawableRes id: Int): BitmapDescriptor {
     }
 }
 
-fun shareRestaurant(context: Context, restaurant: Restaurant) {
+fun shareRestaurant(context: Context, restaurant: Restaurant, address: String? = null) {
     val dietaryText = if (restaurant.dietaryRestrictions.isNotEmpty()) {
         restaurant.dietaryRestrictions.joinToString(" ") { it.emoji }
     } else {
         "🍽️"
     }
 
+    val addressText = address ?: "Dirección no disponible"
+
     val shareText = buildString {
         append("🍽️ ${restaurant.name}\n")
+        append("📍 $addressText\n")
         restaurant.snippet?.let {
             append("$it\n")
         }
-        append("$dietaryText\n")
-        append("\nDescubrí más restaurantes en FoodForAll ✨")
+        append("$dietaryText Opciones: ${restaurant.dietaryRestrictions.joinToString(", ") { it.description }}\n")
+        append("\n")
+        append("¡Descubre más restoranes para tu restricción alimenticia en FoodForAll!")
     }
 
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -153,11 +161,40 @@ fun FullRestaurantProfileInSheet(
     val authUser by authViewModel.currentUser.collectAsState()
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var restaurantAddress by remember { mutableStateOf<String?>(null) }
     
     LaunchedEffect(error) {
         error?.let {
             scope.launch {
                 snackbarHostState.showSnackbar(it)
+            }
+        }
+    }
+
+    // Función para obtener la dirección usando geocoding nativo
+    suspend fun getAddressFromCoordinates(lat: Double, lng: Double): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(lat, lng, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val address = addresses[0]
+                    // Construir una dirección legible
+                    val addressParts = mutableListOf<String>()
+                    address.thoroughfare?.let { addressParts.add(it) }
+                    address.subThoroughfare?.let { addressParts.add(it) }
+                    if (addressParts.isEmpty()) {
+                        address.featureName?.let { addressParts.add(it) }
+                    }
+                    address.locality?.let { addressParts.add(it) }
+                    addressParts.joinToString(", ").takeIf { it.isNotEmpty() }
+                        ?: address.getAddressLine(0)
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
             }
         }
     }
@@ -171,6 +208,10 @@ fun FullRestaurantProfileInSheet(
     // LaunchedEffects para cargar datos y verificar estado de guardado
     LaunchedEffect(restaurant.id) {
         viewModel.loadReviews(restaurant.id)
+        // Obtener la dirección usando geocoding
+        scope.launch {
+            restaurantAddress = getAddressFromCoordinates(restaurant.lat, restaurant.lng)
+        }
     }
 
     LaunchedEffect(restaurant.id, authUser?.id) {
@@ -181,7 +222,6 @@ fun FullRestaurantProfileInSheet(
 
     // Estado para cambiar entre pestañas del perfil
     var selectedSectionIndex by rememberSaveable { mutableStateOf(2) } // Reviews es el índice 2
-    val context = LocalContext.current
     // Contenedor principal para el contenido desplazable
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -202,7 +242,7 @@ fun FullRestaurantProfileInSheet(
                     },
                     isSaved = isSaved,
                     showSaveButton = authUser != null,
-                    onShare = { shareRestaurant(context, restaurant) }
+                    onShare = { shareRestaurant(context, restaurant, restaurantAddress) }
                 )
             }
 
@@ -210,7 +250,7 @@ fun FullRestaurantProfileInSheet(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Av. Libertador 5000\n12:00 - 00:00 hs",
+                    text = "${restaurantAddress ?: "Cargando dirección..."}\n12:00 - 00:00 hs",
                     modifier = Modifier.padding(horizontal = 16.dp),
                     fontSize = 14.sp, // Agregado .sp
                     color = Color.Gray
