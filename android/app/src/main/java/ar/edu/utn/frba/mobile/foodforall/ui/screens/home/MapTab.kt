@@ -93,6 +93,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.location.Geocoder
+import androidx.compose.runtime.DisposableEffect
 import java.util.Locale
 
 val DEFAULT_LOCATION = LatLng(-34.598666, -58.419950)
@@ -451,6 +452,12 @@ fun MapTab(
     // Estado para controlar si estamos en la vista Compacta (false) o Perfil Completo (true)
     var isFullProfile by rememberSaveable { mutableStateOf(false) }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearMapBounds()
+        }
+    }
+
     LocationPermissionGate(
         requestOnStart = true,
         onResult = { ok -> hasLocation = ok }
@@ -464,7 +471,9 @@ fun MapTab(
             .distinctUntilChanged()
             .filter { moving -> !moving }
             .collectLatest {
-                viewModel.loadRestaurants()
+                cameraPositionState.projection?.visibleRegion?.latLngBounds?.let {
+                    viewModel.setMapBounds(it)
+                }
             }
     }
 

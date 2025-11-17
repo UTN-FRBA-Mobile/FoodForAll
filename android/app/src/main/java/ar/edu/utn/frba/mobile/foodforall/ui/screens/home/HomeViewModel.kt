@@ -6,6 +6,7 @@ import ar.edu.utn.frba.mobile.foodforall.domain.model.Restaurant
 import ar.edu.utn.frba.mobile.foodforall.repository.RestaurantRepository
 import ar.edu.utn.frba.mobile.foodforall.domain.model.DietaryRestriction
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,8 +32,22 @@ class HomeViewModel(
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation.asStateFlow()
 
+    private val _mapBounds = MutableStateFlow<LatLngBounds?>(null)
+
     init {
         loadRestaurants()
+    }
+
+    fun setMapBounds(bounds: LatLngBounds) {
+        _mapBounds.value = bounds
+        loadRestaurants()
+    }
+
+    fun clearMapBounds() {
+        if (_mapBounds.value != null) {
+            _mapBounds.value = null
+            loadRestaurants()
+        }
     }
 
     fun updateUserLocation(location: LatLng?) {
@@ -45,11 +60,29 @@ class HomeViewModel(
             _isLoading.value = true
             _error.value = null
             try {
-                val result = if (_selectedFilters.value.isEmpty()) {
+                val result = _mapBounds.value?.let { bounds ->
+                    val inBounds = repository.fetchInBounds(bounds, _userLocation.value)
+                    if (_selectedFilters.value.isEmpty()) {
+                        inBounds
+                    } else {
+                        inBounds.filter { restaurant ->
+                            _selectedFilters.value.all { filter ->
+                                when (filter) {
+                                    DietaryRestriction.VEGETARIAN -> restaurant.hasVegetarianOption
+                                    DietaryRestriction.VEGAN -> restaurant.hasVeganOption
+                                    DietaryRestriction.CELIAC -> restaurant.hasCeliacOption
+                                    DietaryRestriction.SIBO -> restaurant.hasSiboOption
+                                    DietaryRestriction.GENERAL -> true
+                                }
+                            }
+                        }
+                    }
+                } ?: if (_selectedFilters.value.isEmpty()) {
                     repository.getAll()
                 } else {
                     repository.getWithFilters(_selectedFilters.value)
                 }
+
                 _restaurants.value = result
                     .map { it.withDistance(_userLocation.value) }
                     .sortedByDescending { it.rating }
